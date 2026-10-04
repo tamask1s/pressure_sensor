@@ -100,7 +100,7 @@ class _AppState extends State<PressureApp> {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'Talajnyomás',
+    title: 'Talajminőség térképen',
     debugShowCheckedModeBanner: false,
     theme: pressureTheme(),
     home: ListenableBuilder(
@@ -235,7 +235,9 @@ class _HomeState extends State<Home> {
             const SizedBox(width: 10),
             Flexible(
               child: Text(
-                app.simulated ? 'Talajnyomás · SZIMULÁTOR' : 'Talajnyomás',
+                app.simulated
+                    ? 'Talajminőség térképen · SZIMULÁTOR'
+                    : 'Talajminőség térképen',
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),

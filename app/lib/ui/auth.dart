@@ -125,12 +125,14 @@ class _AuthState extends State<AuthPage> {
                     children: [
                       Icon(Icons.landscape_rounded, size: 38, color: green),
                       SizedBox(width: 12),
-                      Text(
-                        'Talajnyomás',
-                        style: TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.w700,
-                          color: ink,
+                      Expanded(
+                        child: Text(
+                          'Talajminőség térképen',
+                          style: TextStyle(
+                            fontSize: 25,
+                            fontWeight: FontWeight.w700,
+                            color: ink,
+                          ),
                         ),
                       ),
                     ],
@@ -142,7 +144,7 @@ class _AuthState extends State<AuthPage> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Két érzékelő. Egy mérés. A földjeid áttekinthető képe.',
+                    'Mérd a talaj változásait munka közben, és térképezd fel a teljes területet.',
                   ),
                   const SizedBox(height: 28),
                   if (app.simulated)

@@ -1,6 +1,6 @@
 {
-  "name": "Talajnyomás",
-  "short_name": "Talajnyomás",
+  "name": "Talajminőség térképen",
+  "short_name": "Talajminőség térképen",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f3f5ef",

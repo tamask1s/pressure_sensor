@@ -14,7 +14,7 @@
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
     <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
     <application
-        android:label="Talajnyomás"
+        android:label="Talajminőség térképen"
         android:name=".PressureApplication"
         android:allowBackup="false"
         android:usesCleartextTraffic="false"

@@ -19,7 +19,7 @@ async def lifespan(app):
     yield
     stop.set()
     if worker: await asyncio.to_thread(worker.join,20)
-app=FastAPI(title='Talajnyomás',version='1.0.0',root_path='/pressure_sensor',docs_url=None,redoc_url=None,openapi_url='/api/v1/openapi.json',lifespan=lifespan)
+app=FastAPI(title='Talajminőség térképen',version='1.0.0',root_path='/pressure_sensor',docs_url=None,redoc_url=None,openapi_url='/api/v1/openapi.json',lifespan=lifespan)
 
 def error(request,status,code,message):
     return JSONResponse({'error':{'code':code,'message':message,'request_id':getattr(request.state,'request_id',uid())}},status_code=status,headers={'Retry-After':'60'} if status in (429,503) else {})

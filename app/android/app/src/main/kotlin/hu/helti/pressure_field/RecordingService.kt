@@ -13,7 +13,7 @@ class RecordingService : Service() {
         manager.createNotificationChannel(NotificationChannel("measurement", "Folyamatban lévő mérés", NotificationManager.IMPORTANCE_LOW))
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val notification = Notification.Builder(this, "measurement")
-            .setSmallIcon(R.drawable.ic_measurement).setContentTitle("Talajnyomás · mérés folyamatban")
+            .setSmallIcon(R.drawable.ic_measurement).setContentTitle("Talajminőség térképen · mérés folyamatban")
             .setContentText("A nyomásadatok rögzülnek. Megnyitás a leállításhoz.")
             .setContentIntent(open).setOngoing(true).setCategory(Notification.CATEGORY_SERVICE).build()
         if (Build.VERSION.SDK_INT >= 29) {

@@ -91,7 +91,7 @@ void main() {
           ),
         );
         await tester.pump();
-        expect(find.text('Talajnyomás · SZIMULÁTOR'), findsOneWidget);
+        expect(find.text('Talajminőség térképen · SZIMULÁTOR'), findsOneWidget);
         expect(find.text('Tesztpár előkészítése'), findsOneWidget);
         expect(tester.takeException(), isNull);
         if (const bool.fromEnvironment('SCREENSHOTS')) {

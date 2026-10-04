@@ -54,7 +54,7 @@ Future<void> main(List<String> arguments) async {
     server = SimulatorServer(Simulation(registry));
     await server.start(port: port);
     stdout.writeln(
-      'Talajnyomas szimulator · 2 x 10 Hz · 127.0.0.1:$port\n'
+      'Talajminőség térképen szimulátor · 2 x 10 Hz · 127.0.0.1:$port\n'
       'Service admin-import (titkos, csak tesztkornyezetbe): ${file.path}\n'
       'A vezerlest az app Elo meres lapjan talalod. Leallitas: Ctrl+C.',
     );

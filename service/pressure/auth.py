@@ -31,7 +31,7 @@ def queue_token(db,a,kind):
     db.execute('DELETE FROM outbox WHERE account=?',(a['id'],))
     db.execute('INSERT INTO tokens VALUES(?,?,?,?)',(digest(token),a['id'],kind,now()+(86400 if kind=='verify-email' else 3600)))
     link=f'{PUBLIC}/?action={kind}&token={token}'
-    payload={'to':a['email'],'subject':'Talajnyomás – '+('e-mail megerősítése' if kind=='verify-email' else 'jelszó-visszaállítás'),'body':f'Nyisd meg ezt a hivatkozást:\n{link}\n\nHa nem te kérted, hagyd figyelmen kívül ezt a levelet.'}
+    payload={'to':a['email'],'subject':'Talajminőség térképen – '+('e-mail megerősítése' if kind=='verify-email' else 'jelszó-visszaállítás'),'body':f'Nyisd meg ezt a hivatkozást:\n{link}\n\nHa nem te kérted, hagyd figyelmen kívül ezt a levelet.'}
     db.execute('INSERT INTO outbox(account,payload,next_try) VALUES(?,?,?)',(a['id'],seal(dump(payload)),now()))
 
 @router.post('/auth/register',status_code=202)

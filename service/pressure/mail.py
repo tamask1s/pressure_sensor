@@ -3,7 +3,7 @@ from email.message import EmailMessage
 from .common import *
 log=logging.getLogger('pressure.mail')
 def deliver(payload):
-    message=EmailMessage(); message['From']=f"Talajnyomás <{os.environ['PRESSURE_MAIL_FROM']}>"; message['To']=payload['to']; message['Subject']=payload['subject']; message.set_content(payload['body'])
+    message=EmailMessage(); message['From']=f"Talajminőség térképen <{os.environ['PRESSURE_MAIL_FROM']}>"; message['To']=payload['to']; message['Subject']=payload['subject']; message.set_content(payload['body'])
     with smtplib.SMTP(os.environ.get('PRESSURE_SMTP_HOST','127.0.0.1'),int(os.environ.get('PRESSURE_SMTP_PORT','25')),timeout=15) as smtp:
         if os.environ.get('PRESSURE_SMTP_TLS')=='1': smtp.starttls(context=ssl.create_default_context())
         if os.environ.get('PRESSURE_SMTP_USER'): smtp.login(os.environ['PRESSURE_SMTP_USER'],Path(os.environ['PRESSURE_SMTP_PASSWORD_FILE']).read_text().strip())
