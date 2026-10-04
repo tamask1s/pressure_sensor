@@ -40,3 +40,11 @@ dist/
 .env.*
 !.env.example
 *.simulator.json
+
+# Service runtime, credentials and downloaded build
+service/.deps/
+service/web/
+service/.runtime/
+*.sqlite3*
+__pycache__/
+.pytest_cache/

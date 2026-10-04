@@ -22,7 +22,7 @@ class AppController extends ChangeNotifier {
     : api = Api(
         const String.fromEnvironment(
           'API_URL',
-          defaultValue: kIsWeb ? '/api/v1' : '',
+          defaultValue: kIsWeb ? '/pressure_sensor/api/v1' : '',
         ),
         vaultNamespace: simulated ? 'sim:$simulationPort:' : '',
       ),

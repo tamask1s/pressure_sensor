@@ -1,0 +1,18 @@
+# Ellenőrzések – 2026-10-04
+
+- **9 automatizált teszt sikeres** (külön ideiglenes DB): két fiók izolációja; négy eszköz/két pár; GPS nélküli feltöltés; atomikus köteghiba; globális mintaduplikáció; azonos/eltérő kötegismétlés; lezárt session; HMAC közös fixture; challenge-lejárat, visszajátszás, párhuzamos completion; eszközátadás; tokenforgatás/lejárat/visszavonás; webes Origin/CSRF; reset és fióktörlés; presence lease, régi állapot és gyűjtőütközés; lapozás, CSV; app/service közös heatmap-fixture; kérésméretkorlát.
+- **576 000 teljes minta**, 28 801 GPS-fix, API-n keresztüli kötegfeltöltés, sessionlezárás és térképi mintaszám/érték ellenőrizve. Feltöltés kb. 3 perc, adatbázis 720 289 792 bájt (~687 MiB). Ez szintetikus próba, nem bizonyíték a 10 egyidejű párra vagy a nyolcórás valódi telefonos működésre.
+- A nagy teszt **teljes mentési másolata nem fejeződött be**: kevés lemezhely miatt a futást leállítottuk, a saját tesztfájlokat eltávolítottuk. A feltöltés és a térképi állítások ez előtt sikeresek voltak. A teszt és az üzemi mentés azóta előzetes szabadhelyellenőrzést használ; az üzemi mentés másolás közben is megáll 256 MiB alatti szabad hely esetén.
+- **Mentés és visszaállítás sikeres 400 mintán**: tényleges SQLite backup, integritásellenőrzés, a visszaállított DB-n azonos API/térkép-válasz. Első éles, tömörített mentés és napi timer szintén működik.
+- **Éles HTTPS integráció**: ideiglenes fiókban 4 eszköz HMAC-claimje, 2 pár, 2×20 másodperc, összesen 800 minta feltöltése és lezárása a mellékelt valódi `simulator.py` programmal; első kötegek ismétlésével. Nem mock API.
+- **SMTP**: TLS, hitelesítés és SMTP NOOP sikeres a sinsigra meglévő szolgáltatójánál. Külső postaládába történő tényleges kézbesítés nem lett tesztelve.
+- **Web**: a projekt tényleges Flutter artifactja, éles HTTPS, Chromium, működő session és belépés. A nagyobb felbontású térképpróbán az 1 GB RAM-os szerver tesztböngészője OOM-mal leállt; az API működőképes maradt. A kisebb böngészőpróba eredményét az alábbi kiegészítés rögzíti.
+- **Meglévő szolgáltatások**: sinsigra kezdőoldal és mesemondó health végpont telepítés előtt/után HTTP 200; saját konfigurációik SHA256 ellenőrzése változatlan. A pressure saját portot/OS-felhasználót/DB-t kapott, az Apache és a két régi service nem lett újraindítva.
+
+Nem futott: valódi BLE-eszközös/telefonos terepi mérés, mobil képernyőzár és GPS-pontosság vizsgálata, külső mentési célra visszaállítás, hosszú távú többfelhasználós terhelés. Docker Compose alternatíva rendelkezésre áll, ezen a hoston nincs telepítve/tesztelve.
+
+**Böngészős adatnézet-próba sikeres:** Chromium 840×620, korlátozott JS-memória; a valódi Flutter weben a két lezárt mérés és az eszközlista látható, a fiók közös térképe **8 színezett cellát** mutat, hiányzó helyadat 0. JavaScript-hiba nincs. A betöltés eleji 401 a még be nem jelentkezett `/auth/session` kérés elvárt válasza. A tesztfiók és szintetikus mérési adatai eltávolítva; a felhasználó külön, még fiókhoz nem rendelt szimulátorprofilt kapott.
+
+Az alaptérkép blokkoló képét a hiányzó Referer okozta. A javított `strict-origin` policy után böngészőből egy tényleges csempe HTTP 200; elküldött Referer pontosan `https://timeonion.com/`, URL-paraméter nélkül.
+
+Push előtti összevonás a Windows-szimulátor `b690ba2` commitjával: **10 teszt sikeres, 1 opcionális soak teszt kihagyva**. Az új teszt a Windows `newSimulatorDevices()` által használt JSON-lista admin-importját, a titok titkosított tárolását és a normál HMAC-claimet ellenőrzi. Ez import/API-kompatibilitási teszt; a Windows program teljes élő szerveres mérési próbáját nem helyettesíti.

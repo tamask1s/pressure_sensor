@@ -1,0 +1,14 @@
+[Unit]
+Description=Pressure sensor local backup
+[Service]
+Type=oneshot
+ExecStart=/opt/mesemondo/venv/bin/python /opt/pressure_sensor/current/service/ops/backup.py
+Nice=19
+CPUQuota=20%
+MemoryMax=64M
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/backups/pressure_sensor /var/lib/pressure_sensor

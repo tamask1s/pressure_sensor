@@ -1,0 +1,32 @@
+[Unit]
+Description=Talajnyomas pressure sensor API and web
+After=network.target
+[Service]
+User=pressure-sensor
+Group=pressure-sensor
+WorkingDirectory=/opt/pressure_sensor/current/service
+EnvironmentFile=/etc/pressure_sensor/service.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONPATH=/opt/pressure_sensor/current/service:/opt/pressure_sensor/deps
+ExecStart=/opt/mesemondo/venv/bin/python -m uvicorn pressure.api:app --host 127.0.0.1 --port 8093 --workers 1 --no-access-log --proxy-headers --forwarded-allow-ips 127.0.0.1 --limit-concurrency 16 --backlog 32
+Restart=on-failure
+RestartSec=5
+Nice=10
+CPUQuota=50%
+MemoryHigh=192M
+MemoryMax=256M
+TasksMax=32
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pressure_sensor
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+[Install]
+WantedBy=multi-user.target

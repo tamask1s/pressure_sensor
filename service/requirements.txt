@@ -1,0 +1,6 @@
+fastapi==0.141.1
+uvicorn==0.53.0
+pydantic==2.13.5
+cryptography==50.0.1
+pyproj==3.7.2
+# System library: libargon2.so.1. Other packages are reused read-only on this host.

@@ -1,0 +1,2565 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Talajnyomás",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "summary": "Register",
+        "operationId": "register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/resend-verification": {
+      "post": {
+        "summary": "Resend",
+        "operationId": "resend_api_v1_auth_resend_verification_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Email"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "summary": "Forgot",
+        "operationId": "forgot_api_v1_auth_forgot_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Email"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/verify-email": {
+      "post": {
+        "summary": "Verify",
+        "operationId": "verify_api_v1_auth_verify_email_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Token"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "summary": "Reset",
+        "operationId": "reset_api_v1_auth_reset_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Reset"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "summary": "Login",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Login"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "summary": "Refresh",
+        "operationId": "refresh_api_v1_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Refresh"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/session": {
+      "get": {
+        "summary": "Session",
+        "operationId": "session_api_v1_auth_session_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "summary": "Logout",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/v1/account": {
+      "delete": {
+        "summary": "Delete Account",
+        "operationId": "delete_account_api_v1_account_delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Password"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/devices": {
+      "get": {
+        "summary": "Devices",
+        "operationId": "devices_api_v1_devices_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/devices/{id}": {
+      "get": {
+        "summary": "Get Device",
+        "operationId": "get_device_api_v1_devices__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Rename",
+        "operationId": "rename_api_v1_devices__id__patch",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Rename"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/device-claims/challenge": {
+      "post": {
+        "summary": "Challenge",
+        "operationId": "challenge_api_v1_device_claims_challenge_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Challenge"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/device-claims/complete": {
+      "post": {
+        "summary": "Claim",
+        "operationId": "claim_api_v1_device_claims_complete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Proof"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rigs": {
+      "get": {
+        "summary": "Rigs",
+        "operationId": "rigs_api_v1_rigs_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rigs/{id}": {
+      "put": {
+        "summary": "Put Rig",
+        "operationId": "put_rig_api_v1_rigs__id__put",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Rig"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Archive",
+        "operationId": "archive_api_v1_rigs__id__patch",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Archive"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/collectors/{id}/presence": {
+      "post": {
+        "summary": "Presence",
+        "operationId": "presence_api_v1_collectors__id__presence_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Presence"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}": {
+      "put": {
+        "summary": "Start",
+        "operationId": "start_api_v1_sessions__id__put",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get Session",
+        "operationId": "get_session_api_v1_sessions__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}/batches": {
+      "post": {
+        "summary": "Batch",
+        "operationId": "batch_api_v1_sessions__id__batches_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Batch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}/complete": {
+      "post": {
+        "summary": "Complete",
+        "operationId": "complete_api_v1_sessions__id__complete_post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Complete"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions": {
+      "get": {
+        "summary": "Sessions",
+        "operationId": "sessions_api_v1_sessions_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "rig_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rig Ids"
+            }
+          },
+          {
+            "name": "device_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Device Ids"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}/samples": {
+      "get": {
+        "summary": "Samples",
+        "operationId": "samples_api_v1_sessions__id__samples_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "device_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Device Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}/track": {
+      "get": {
+        "summary": "Track",
+        "operationId": "track_api_v1_sessions__id__track_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}/series": {
+      "get": {
+        "summary": "Series",
+        "operationId": "series_api_v1_sessions__id__series_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "To"
+            }
+          },
+          {
+            "name": "bucket_ms",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400000,
+              "minimum": 100,
+              "default": 1000,
+              "title": "Bucket Ms"
+            }
+          },
+          {
+            "name": "device_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Device Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{id}/export.csv": {
+      "get": {
+        "summary": "Export",
+        "operationId": "export_api_v1_sessions__id__export_csv_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/map/cells": {
+      "get": {
+        "summary": "Cells",
+        "operationId": "cells_api_v1_map_cells_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "To"
+            }
+          },
+          {
+            "name": "bbox",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Bbox"
+            }
+          },
+          {
+            "name": "grid_srid",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 32634,
+              "title": "Grid Srid"
+            }
+          },
+          {
+            "name": "cell_m",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "title": "Cell M"
+            }
+          },
+          {
+            "name": "layer",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "combined",
+                "A",
+                "B"
+              ],
+              "type": "string",
+              "default": "combined",
+              "title": "Layer"
+            }
+          },
+          {
+            "name": "moving_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Moving Only"
+            }
+          },
+          {
+            "name": "rig_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rig Ids"
+            }
+          },
+          {
+            "name": "device_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Device Ids"
+            }
+          },
+          {
+            "name": "session_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Session Ids"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Archive": {
+        "properties": {
+          "archived": {
+            "type": "boolean",
+            "const": true,
+            "title": "Archived"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "archived",
+          "expected_revision"
+        ],
+        "title": "Archive"
+      },
+      "Batch": {
+        "properties": {
+          "batch_id": {
+            "type": "string",
+            "title": "Batch Id"
+          },
+          "time_segments": {
+            "items": {
+              "$ref": "#/components/schemas/Segment"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Time Segments",
+            "default": []
+          },
+          "gps_fixes": {
+            "items": {
+              "$ref": "#/components/schemas/Fix"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Gps Fixes",
+            "default": []
+          },
+          "samples": {
+            "items": {
+              "$ref": "#/components/schemas/Sample"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "title": "Samples",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "batch_id"
+        ],
+        "title": "Batch"
+      },
+      "Calibration": {
+        "properties": {
+          "profile_id": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Profile Id"
+          },
+          "sensor_serial": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "minimum": 0.0,
+            "title": "Sensor Serial"
+          },
+          "range_min_pa": {
+            "type": "integer",
+            "maximum": 60000000.0,
+            "minimum": 0.0,
+            "title": "Range Min Pa"
+          },
+          "range_max_pa": {
+            "type": "integer",
+            "maximum": 60000000.0,
+            "minimum": 1.0,
+            "title": "Range Max Pa"
+          },
+          "scale": {
+            "type": "number",
+            "maximum": 100.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Scale"
+          },
+          "offset_pa": {
+            "type": "number",
+            "maximum": 60000000.0,
+            "minimum": -60000000.0,
+            "title": "Offset Pa"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "profile_id",
+          "sensor_serial",
+          "range_min_pa",
+          "range_max_pa",
+          "scale",
+          "offset_pa",
+          "verified"
+        ],
+        "title": "Calibration"
+      },
+      "Challenge": {
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "pattern": "^hps-[0-9a-f]{12}$",
+            "title": "Device Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_id"
+        ],
+        "title": "Challenge"
+      },
+      "Complete": {
+        "properties": {
+          "ended_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ended At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "completed",
+              "interrupted"
+            ],
+            "title": "Status"
+          },
+          "expected_samples_by_device": {
+            "patternProperties": {
+              "^hps-[0-9a-f]{12}$": {
+                "type": "integer",
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0
+              }
+            },
+            "type": "object",
+            "title": "Expected Samples By Device"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/Gap"
+            },
+            "type": "array",
+            "maxItems": 1000,
+            "title": "Gaps",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ended_at",
+          "status",
+          "expected_samples_by_device"
+        ],
+        "title": "Complete"
+      },
+      "Credentials": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "minLength": 3,
+            "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 12,
+            "title": "Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "Credentials"
+      },
+      "Email": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "minLength": 3,
+            "title": "Email"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "Email"
+      },
+      "Fix": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "segment_id": {
+            "type": "string",
+            "title": "Segment Id"
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Captured At"
+          },
+          "latitude": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude"
+          },
+          "accuracy_m": {
+            "type": "number",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Accuracy M"
+          },
+          "speed_mps": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speed Mps"
+          },
+          "heading_deg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMaximum": 360.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heading Deg"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "segment_id",
+          "captured_at",
+          "latitude",
+          "longitude",
+          "accuracy_m"
+        ],
+        "title": "Fix"
+      },
+      "Gap": {
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "pattern": "^hps-[0-9a-f]{12}$",
+            "title": "Device Id"
+          },
+          "boot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boot Id"
+          },
+          "from_seq": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4294967295.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Seq"
+          },
+          "to_seq": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4294967295.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Seq"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "ended_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Ended At"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_id",
+          "started_at",
+          "ended_at",
+          "reason"
+        ],
+        "title": "Gap"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Location": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude"
+          },
+          "accuracy_m": {
+            "type": "number",
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Accuracy M"
+          },
+          "speed_mps": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speed Mps"
+          },
+          "fix_before_id": {
+            "type": "string",
+            "title": "Fix Before Id"
+          },
+          "fix_after_id": {
+            "type": "string",
+            "title": "Fix After Id"
+          },
+          "method": {
+            "type": "string",
+            "const": "interpolated",
+            "title": "Method"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude",
+          "accuracy_m",
+          "fix_before_id",
+          "fix_after_id",
+          "method"
+        ],
+        "title": "Location"
+      },
+      "Login": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "minLength": 3,
+            "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 12,
+            "title": "Password"
+          },
+          "client_kind": {
+            "type": "string",
+            "enum": [
+              "native",
+              "web"
+            ],
+            "title": "Client Kind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "client_kind"
+        ],
+        "title": "Login"
+      },
+      "Observation": {
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "pattern": "^hps-[0-9a-f]{12}$",
+            "title": "Device Id"
+          },
+          "boot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boot Id"
+          },
+          "ble_connected": {
+            "type": "boolean",
+            "title": "Ble Connected"
+          },
+          "last_seq": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4294967295.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seq"
+          },
+          "sample_age_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sample Age Ms"
+          },
+          "pressure_pa": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": -2147483648.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pressure Pa"
+          },
+          "battery_mv": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 65535.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Battery Mv"
+          },
+          "soc_pct": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soc Pct"
+          },
+          "sensor_ok": {
+            "type": "boolean",
+            "title": "Sensor Ok"
+          },
+          "sd_state": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Sd State"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_id",
+          "ble_connected",
+          "sensor_ok",
+          "sd_state"
+        ],
+        "title": "Observation"
+      },
+      "Password": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "maxLength": 256,
+            "title": "Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "title": "Password"
+      },
+      "Presence": {
+        "properties": {
+          "lease_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lease Id"
+          },
+          "heartbeat_seq": {
+            "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "title": "Heartbeat Seq"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "devices": {
+            "items": {
+              "$ref": "#/components/schemas/Observation"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 1,
+            "title": "Devices"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "heartbeat_seq",
+          "observed_at",
+          "devices"
+        ],
+        "title": "Presence"
+      },
+      "Proof": {
+        "properties": {
+          "challenge_id": {
+            "type": "string",
+            "title": "Challenge Id"
+          },
+          "proof": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "title": "Proof"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "challenge_id",
+          "proof"
+        ],
+        "title": "Proof"
+      },
+      "Refresh": {
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 16,
+            "title": "Refresh Token"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "refresh_token"
+        ],
+        "title": "Refresh"
+      },
+      "Rename": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "Rename"
+      },
+      "Reset": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 16,
+            "title": "Token"
+          },
+          "new_password": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 12,
+            "title": "New Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "token",
+          "new_password"
+        ],
+        "title": "Reset"
+      },
+      "Rig": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "device_a_id": {
+            "type": "string",
+            "pattern": "^hps-[0-9a-f]{12}$",
+            "title": "Device A Id"
+          },
+          "device_b_id": {
+            "type": "string",
+            "pattern": "^hps-[0-9a-f]{12}$",
+            "title": "Device B Id"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Expected Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "device_a_id",
+          "device_b_id",
+          "expected_revision"
+        ],
+        "title": "Rig"
+      },
+      "Sample": {
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "pattern": "^hps-[0-9a-f]{12}$",
+            "title": "Device Id"
+          },
+          "boot_id": {
+            "type": "string",
+            "title": "Boot Id"
+          },
+          "seq": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "minimum": 0.0,
+            "title": "Seq"
+          },
+          "time_segment_id": {
+            "type": "string",
+            "title": "Time Segment Id"
+          },
+          "uptime_ms": {
+            "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "title": "Uptime Ms"
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Captured At"
+          },
+          "raw_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 32767.0,
+                "minimum": -32768.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Count"
+          },
+          "pressure_pa": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": -2147483648.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pressure Pa"
+          },
+          "battery_mv": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 65535.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Battery Mv"
+          },
+          "soc_pct": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soc Pct"
+          },
+          "flags": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "sensor_error",
+                "pressure_out_of_range",
+                "rtc_invalid",
+                "battery_unknown",
+                "sd_error",
+                "gps_disabled",
+                "gps_missing",
+                "gps_inaccurate",
+                "time_uncertain",
+                "stationary",
+                "speed_unknown"
+              ]
+            },
+            "type": "array",
+            "maxItems": 11,
+            "title": "Flags"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Location"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_id",
+          "boot_id",
+          "seq",
+          "time_segment_id",
+          "uptime_ms",
+          "captured_at",
+          "raw_count",
+          "pressure_pa",
+          "battery_mv",
+          "soc_pct",
+          "flags",
+          "location"
+        ],
+        "title": "Sample"
+      },
+      "Segment": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^hps-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          },
+          "boot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boot Id"
+          },
+          "uptime_anchor_ms": {
+            "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "title": "Uptime Anchor Ms"
+          },
+          "utc_anchor": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Utc Anchor"
+          },
+          "uncertainty_ms": {
+            "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": 0.0,
+            "title": "Uncertainty Ms"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "phone",
+              "rtc"
+            ],
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "uptime_anchor_ms",
+          "utc_anchor",
+          "uncertainty_ms",
+          "source"
+        ],
+        "title": "Segment"
+      },
+      "SessionStart": {
+        "properties": {
+          "collector_id": {
+            "type": "string",
+            "title": "Collector Id"
+          },
+          "rig_id": {
+            "type": "string",
+            "title": "Rig Id"
+          },
+          "rig_revision": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Rig Revision"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "gps_enabled": {
+            "type": "boolean",
+            "title": "Gps Enabled"
+          },
+          "devices": {
+            "items": {
+              "$ref": "#/components/schemas/Snapshot"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Devices"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "collector_id",
+          "rig_id",
+          "rig_revision",
+          "name",
+          "started_at",
+          "gps_enabled",
+          "devices"
+        ],
+        "title": "SessionStart"
+      },
+      "Snapshot": {
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "pattern": "^hps-[0-9a-f]{12}$",
+            "title": "Device Id"
+          },
+          "ownership_id": {
+            "type": "string",
+            "title": "Ownership Id"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B"
+            ],
+            "title": "Role"
+          },
+          "calibration": {
+            "$ref": "#/components/schemas/Calibration"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_id",
+          "ownership_id",
+          "role",
+          "calibration"
+        ],
+        "title": "Snapshot"
+      },
+      "Token": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 16,
+            "title": "Token"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "Token"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+# Optional alternative; production uses systemd and existing packages.
+services:
+  pressure:
+    build: .
+    env_file: .env
+    ports: ["127.0.0.1:8093:8093"]
+    volumes: ["pressure-data:/data"]
+    restart: unless-stopped
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8093/api/v1/health')"]
+      interval: 30s
+      timeout: 5s
+volumes:
+  pressure-data:

@@ -1,0 +1,8 @@
+[Unit]
+Description=Daily pressure sensor backup (two retained copies)
+[Timer]
+OnCalendar=*-*-* 03:40:00
+RandomizedDelaySec=10m
+Persistent=true
+[Install]
+WantedBy=timers.target

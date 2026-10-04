@@ -92,7 +92,7 @@ jobs:
           path: app/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 7
-      - run: flutter build web --release --no-pub --no-web-resources-cdn --pwa-strategy=none
+      - run: flutter build web --release --no-pub --no-web-resources-cdn --pwa-strategy=none --base-href=/pressure_sensor/ --dart-define=API_URL=/pressure_sensor/api/v1
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: web
