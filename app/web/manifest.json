@@ -1,0 +1,11 @@
+{
+  "name": "Talajnyomás",
+  "short_name": "Talajnyomás",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f3f5ef",
+  "theme_color": "#17654b",
+  "description": "Készülékek, mérések és közös nyomástérkép.",
+  "orientation": "any",
+  "icons": [{"src":"mark.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]
+}

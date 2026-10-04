@@ -1,0 +1,81 @@
+{
+  "warning": "Synthetic, publicly known test values. Never provision these secrets.",
+  "ble_packet": {
+    "hex": "0201ffffffff7856341200000000ffffff0080c1",
+    "pressure_pa": 0,
+    "raw_count": -16000,
+    "seq": 4294967295,
+    "uptime_low": 305419896
+  },
+  "claim": {
+    "device_id": "hps-001122334455",
+    "account_id": "11111111-1111-4111-8111-111111111111",
+    "challenge_id": "22222222-2222-4222-8222-222222222222",
+    "nonce": "AAECAwQFBgcICQoLDA0ODw",
+    "secret_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "message_hex": "4850532d434c41494d2d76310a6870732d3030313132323333343435350a31313131313131312d313131312d343131312d383131312d3131313131313131313131310a32323232323232322d323232322d343232322d383232322d3232323232323232323232320a000102030405060708090a0b0c0d0e0f",
+    "proof": "kjJnBI6RhVgZVj3EX1Eg3Jw2JSGm2a2-2o16IWAnSJE"
+  },
+  "map": {
+    "latitude": 47.0,
+    "longitude": 19.0,
+    "grid_srid": 32634,
+    "cell_m": 10,
+    "fix_accuracy_m": 2,
+    "fix_speed_mps": 2,
+    "fix_times_ms": [
+      0,
+      1000
+    ],
+    "sample_time_ms": 500,
+    "sessions": [
+      {
+        "id": "one",
+        "A_pa": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "B_pa": [
+          20000000
+        ]
+      },
+      {
+        "id": "two",
+        "A_pa": [
+          20000000
+        ],
+        "B_pa": [
+          20000000
+        ]
+      }
+    ],
+    "expected": {
+      "cell_count": 1,
+      "mean_pa": 15000000,
+      "min_pa": 0,
+      "max_pa": 20000000,
+      "sample_count": 13,
+      "session_count": 2,
+      "channel_count": 2
+    }
+  },
+  "gps_missing": {
+    "captured_at": "2026-10-03T12:00:00.100Z",
+    "pressure_pa": 0,
+    "raw_count": -16000,
+    "location": null,
+    "flags": [
+      "gps_missing"
+    ],
+    "upload_allowed": true,
+    "map_allowed": false
+  }
+}
