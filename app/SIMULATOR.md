@@ -1,6 +1,6 @@
 # Windows eszközszimulátor
 
-A GitHub `windows` csomagját bontsd ki, majd indítsd a **`pressure_simulator.exe`** fájlt. Elindítja az appot szimulációs módban; az app bezárásakor leáll. Nem kell Bluetooth vagy új telepítés.
+A [GitHub Build and test](https://github.com/tamask1s/pressure_sensor/actions/workflows/build.yml) legfrissebb sikeres `main` futásánál, az **Artifacts → windows** csomagot töltsd le GitHub-belépés után. Bontsd ki az egész ZIP-et, majd indítsd a **`pressure_simulator.exe`** fájlt. Elindítja a Windows appot szimulációs módban; az app bezárásakor leáll. Ugyanaz a Flutter app és mérési/feltöltési kód fut, mint Androidon. Egy szimulátor már **két érzékelőt** ad; egy párhoz egy példány elég. Bluetooth vagy Python nem kell.
 
 1. **Mérés fiók nélkül** → **Tesztpár előkészítése** → **Mérés indítása**.
 2. Az Élő mérés lapon kapcsolható a GPS, haladás, A/B elérhetőség, szenzorhiba; választható változó vagy rögzített nyomás, illetve eszköz-újraindítás.
@@ -10,10 +10,22 @@ Két redundáns érzékelő, egyenként 10 Hz, 0–200 bar; 10 km/h-s oda-vissza
 
 ## Service-próba
 
-- Az első indítás készít két véletlen eszközazonosítót és egyedi HMAC-titkot: `%LOCALAPPDATA%/PressureFieldSimulator/default/devices.simulator.json`. Ez egy admin-import rekordokból álló JSON-lista, a [meglévő séma](https://github.com/tamask1s/pressure_sensor/blob/main/fw/PROVISIONING.md) szerint. Újraindításkor ugyanazokat használja.
-- Ezt a **titkos fájlt** a service admin-importjával töltsd be a **tesztkörnyezetbe**. Ne tedd Gitbe, és ne másold az apphoz. Elvesztése esetén az új szimulátorazonosítókat újra importálni kell.
-- Az app szimulációs ablakában add meg a service HTTPS API-címét, lépj be tesztfiókkal, majd készítsd elő a párt. A normál challenge/HMAC-claim, párlétrehozás, presence, offline kötegfeltöltés és lekérdezés fut; nem kell külön service-végpont vagy auth-kivétel.
-- Hálózatkimaradás után a sorból folytatódik a feltöltés. A webes felületen ugyanazzal a tesztfiókkal ellenőrizhető. A helyi mód korábbi mérései nem kerülnek át a fiókba.
+A gyártói előkészítés és a vásárlói párosítás két külön lépés. Eladás előtt az eszköz azonosítóját és titkát egyszer a service-be kell importálni. Utána a vásárló csak az appban párosít. A szimulátor friss, véletlen eszközöket generál, ezért ezekhez is kell az egyszeri előkészítés.
+
+1. Indítsd a szimulátort. Az első indítás létrehozza a **privát** `%LOCALAPPDATA%/PressureFieldSimulator/default/devices.simulator.json` fájlt két eszközzel. Ezt a service adminjának kell importálnia, a [meglévő séma](https://github.com/tamask1s/pressure_sensor/blob/main/fw/PROVISIONING.md) szerint. A jelenlegi szerverparancs:
+
+   ```sh
+   sudo bash /opt/pressure_sensor/current/service/ops/admin.sh import /privat/utvonal/devices.simulator.json
+   ```
+
+   A webes adminimport külön fejlesztés; [promptja itt található](https://github.com/tamask1s/pressure_sensor/blob/main/service/ADMIN_PROMPT.md). A fájlt védett módon add át, ne tedd Gitbe vagy nyilvános tárhelyre. Újraindításkor ugyanazok az eszközök maradnak; a privát fájlt őrizd meg.
+2. Az app **Szolgáltatás címe** mezőjébe pontosan ezt írd: `https://timeonion.com/pressure_sensor/api/v1`. Lépj be a megerősített tesztfiókoddal.
+3. **Tesztpár előkészítése** → **Mérés indítása**. Hagyd bekapcsolva a **GPS** és **Traktor halad** kapcsolót, mérj legalább egy percet, majd **Mérés leállítása**. Várd meg: **Feltöltés rendben · 0 minta vár feltöltésre**.
+4. A [webes felületen](https://timeonion.com/pressure_sensor/) ugyanazzal a fiókkal a **Mérések** lapon keresd a `SIM ·` mérést, majd nyisd meg a **Térkép** lapot. GPS kikapcsolásával is van időbélyeges feltöltés, csak a hely nélküli minták nem rajzolhatók térképre.
+
+Ha a párosítás `claim_unavailable` / ütközés hibával megáll, ellenőrizd az importot: pontosan ennek a gépnek és profilnak az eszközei legyenek előkészítve, és ne tartozzanak másik fiókhoz. Nyomd meg újra a tesztpár gombját az import után. A szerver külön Python-szimulátorcsomagja más eszközazonosítókat tartalmaz; annak előkészítése nem regisztrálja automatikusan a Windows-szimulátort.
+
+Hálózatkimaradás után a feltöltési sor folytatódik. A helyi, fiók nélküli mód korábbi mérései nem kerülnek át a fiókba.
 
 Második párhoz indíts más profilt és portot; az új importfájlt is töltsd be, és lépj be ugyanabba vagy másik tesztfiókba:
 
@@ -39,4 +51,6 @@ dart compile exe bin/simulator.dart -o build/windows/x64/runner/Release/pressure
 
 A `--headless` csak a szimulátort indítja; leállítás Ctrl+C. Egyedi app-port: `--simulator-port=47833`.
 
-A GitHub workflow futtatja a protokoll/claim-, újracsatlakozási, GPS nélküli és SQLite→feltöltés teszteket, és az EXE-t a Windows-csomagba teszi. A service-válaszok a tesztben helyettesítettek; valódi szerveres integrációhoz a fenti próba kell.
+A GitHub workflow futtatja a protokoll/claim-, újracsatlakozási, GPS nélküli és SQLite→feltöltés teszteket, és mindkét EXE-t a Windows-csomagba teszi. A CI service-válaszai helyettesítettek.
+
+2026-10-04: helyi, lefordított Windows-szimulátorral és az app tényleges hálózati kódjával az éles belépés, tokenfrissítés és listalekérés sikeres. A teljes szerveres mérési próbát a még nem importált teszteszközök akadályozzák (`409 claim_unavailable`); feltöltést és éles hőtérképet ezen az útvonalon még nem igazoltunk.
