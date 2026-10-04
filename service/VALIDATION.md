@@ -27,3 +27,9 @@ Push előtti összevonás a Windows-szimulátor `b690ba2` commitjával: **10 tes
 - A böngészős próba két telepítési hibát fedett fel: a ZIP staging 0700 könyvtárjogát (webbetöltés 500), illetve a helyi fájlolvasáshoz hiányzó CSP `connect-src blob:` engedélyt. Mindkettő javítva; a csomagoló 0755 webkönyvtárat készít, a telepítő kiadásváltás előtt az alkalmazás felhasználójával ellenőrzi a belépőfájlok olvashatóságát. A CSP-kiegészítés csak a pressure útvonalára érvényes.
 - A sinsigra és a mesemondó HTTPS-ellenőrzése 200; a korábbi nginx master, Apache unit, sinsigra worker, mesemondó és saját PostgreSQL állapota/PID-je változatlan. Más alkalmazás konfigurációja vagy adatbázisa nem módosult.
 - A próba végén az ideiglenes adminfiók, négy eszköz és 80 minta eltávolítva; az eredeti account/device/session/record sorok ellenőrzőösszege ismét egyezik. Csak a kért fiók maradt admin. Az ideiglenes böngésző, Dart-formázó és letöltött rendszerkönyvtárak törölve.
+
+## Korábbi mérés grafikonja: `Invalid argument: 100`
+
+A webes fordítás a grafikon időléptékének `1 << 40` felső határát nullává alakította. Emiatt `clamp(100, 0)` dobott hibát, az API-kérés el sem indult. A képen szereplő 33,06489 másodperces mérésre a szerveroldali, csak olvasó ellenőrzés 518 aggregált pontban mind a 660 mintát visszaadta; a hiba nem adatvesztés vagy API-verzióeltérés.
+
+A kliens most a service `100..86400000` ms tartományát használja. A `history_test.dart` a tényleges mérésrészletező oldalt, a grafikonlekérést, hosszú méréseket és az eszközszűrőt vizsgálja. A GitHub webes feladata ezt Chrome-ban is futtatja, hogy a natív Dartban nem jelentkező JavaScript-hiba se maradjon rejtve.

@@ -18,18 +18,23 @@ class AppController extends ChangeNotifier {
   final int simulationPort;
   final Api api;
   Capture capture;
-  AppController({this.simulated = false, this.simulationPort = simulatorPort})
-    : api = Api(
-        const String.fromEnvironment(
-          'API_URL',
-          defaultValue: kIsWeb ? '/pressure_sensor/api/v1' : '',
-        ),
-        vaultNamespace: simulated ? 'sim:$simulationPort:' : '',
-      ),
-      capture = createCapture(
-        simulated: simulated,
-        simulationPort: simulationPort,
-      );
+  AppController({
+    this.simulated = false,
+    this.simulationPort = simulatorPort,
+    Api? api,
+  }) : api =
+           api ??
+           Api(
+             const String.fromEnvironment(
+               'API_URL',
+               defaultValue: kIsWeb ? '/pressure_sensor/api/v1' : '',
+             ),
+             vaultNamespace: simulated ? 'sim:$simulationPort:' : '',
+           ),
+       capture = createCapture(
+         simulated: simulated,
+         simulationPort: simulationPort,
+       );
   String get settingsKey =>
       simulated ? 'sim:$simulationPort:settings' : 'settings';
   Store? store;
@@ -558,7 +563,8 @@ class AppController extends ChangeNotifier {
           session['end']?['ended_at'] ??
               DateTime.now().toUtc().toIso8601String(),
         );
-    final bucket = ((end - start) / 500).ceil().clamp(100, 1 << 40);
+    // Use the service's millisecond limits; web bit shifts truncate to 32 bits.
+    final bucket = ((end - start) / 500).ceil().clamp(100, 86400000);
     if (session['local'] != true) {
       final rows = await api.list(
         '/sessions/${session['id']}/series',
