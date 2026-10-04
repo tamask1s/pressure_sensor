@@ -52,8 +52,8 @@ jobs:
           cache: true
       - run: flutter pub get --enforce-lockfile
       - run: dart format --output=none --set-exit-if-changed lib bin test
-      - run: flutter analyze --no-pub
-      - run: flutter test --no-pub test/admin_test.dart
+      - run: flutter analyze --no-pub 2>&1 | tee /tmp/pressure-analysis.txt
+      - run: flutter test --no-pub test/admin_test.dart 2>&1 | tee /tmp/pressure-widget-tests.txt
       - run: flutter build web --release --no-pub --no-web-resources-cdn --pwa-strategy=none --base-href=/pressure_sensor/ --dart-define=API_URL=/pressure_sensor/api/v1
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
@@ -61,6 +61,13 @@ jobs:
           path: app/build/web/
           if-no-files-found: error
           retention-days: 7
+      - name: Web check diagnostics
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: web-check-diagnostics
+          path: /tmp/pressure-*.txt
+          retention-days: 1
 
   windows:
     runs-on: windows-2022

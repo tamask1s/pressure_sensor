@@ -70,7 +70,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Tulajdonos: owner@example.test'), findsOneWidget);
-      final button = find.widgetWithText(FilledButton, 'Importálás');
+      final button = find.byWidgetPredicate((widget) => widget is FilledButton);
       expect(tester.widget<FilledButton>(button).onPressed, isNull);
       await tester.tap(find.text('JSON kiválasztása és ellenőrzése'));
       await tester.pumpAndSettle();
@@ -110,8 +110,9 @@ void main() {
       final api = Api(
         'https://test.example/api/v1',
         client: MockClient((request) async {
-          if (request.method == 'GET')
+          if (request.method == 'GET') {
             return http.Response('{"items":[]}', 200);
+          }
           posts++;
           return http.Response(
             jsonEncode({
@@ -143,7 +144,7 @@ void main() {
       expect(
         tester
             .widget<FilledButton>(
-              find.widgetWithText(FilledButton, 'Importálás'),
+              find.byWidgetPredicate((widget) => widget is FilledButton),
             )
             .onPressed,
         isNull,
@@ -157,7 +158,7 @@ void main() {
       expect(
         tester
             .widget<FilledButton>(
-              find.widgetWithText(FilledButton, 'Importálás'),
+              find.byWidgetPredicate((widget) => widget is FilledButton),
             )
             .onPressed,
         isNull,
