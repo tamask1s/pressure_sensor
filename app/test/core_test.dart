@@ -141,6 +141,20 @@ void main() {
       isNull,
     );
   });
+  test('GPS preserves sub-millisecond bounds and interpolation precision', () {
+    final a = fix(1000, speed: 0)
+          ..['captured_at'] = '1970-01-01T00:00:01.000900Z',
+        b = fix(2000, speed: 10)
+          ..['captured_at'] = '1970-01-01T00:00:02.000100Z';
+    // A sample just before the first fix has no bracket, even in the same ms.
+    expect(interpolate([a, b], 1000), isNull);
+    expect(
+      interpolate([a, b], 1500)!['speed_mps'],
+      closeTo(10 * 499100 / 999200, 1e-12),
+    );
+    b['captured_at'] = '1970-01-01T00:00:03.000901Z';
+    expect(interpolate([a, b], 2000), isNull);
+  });
   test(
     'Grid weighs channels then sessions equally, independent of sample density',
     () {

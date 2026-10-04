@@ -12,13 +12,7 @@ Két redundáns érzékelő, egyenként 10 Hz, 0–200 bar; 10 km/h-s oda-vissza
 
 A gyártói előkészítés és a vásárlói párosítás két külön lépés. Eladás előtt az eszköz azonosítóját és titkát egyszer a service-be kell importálni. Utána a vásárló csak az appban párosít. A szimulátor friss, véletlen eszközöket generál, ezért ezekhez is kell az egyszeri előkészítés.
 
-1. Indítsd a szimulátort. Az első indítás létrehozza a **privát** `%LOCALAPPDATA%/PressureFieldSimulator/default/devices.simulator.json` fájlt két eszközzel. Ezt a service adminjának kell importálnia, a [meglévő séma](https://github.com/tamask1s/pressure_sensor/blob/main/fw/PROVISIONING.md) szerint. A jelenlegi szerverparancs:
-
-   ```sh
-   sudo bash /opt/pressure_sensor/current/service/ops/admin.sh import /privat/utvonal/devices.simulator.json
-   ```
-
-   A webes adminimport külön fejlesztés; [promptja itt található](https://github.com/tamask1s/pressure_sensor/blob/main/service/ADMIN_PROMPT.md). A fájlt védett módon add át, ne tedd Gitbe vagy nyilvános tárhelyre. Újraindításkor ugyanazok az eszközök maradnak; a privát fájlt őrizd meg.
+1. Indítsd a szimulátort. Az első indítás létrehozza a **privát** `%LOCALAPPDATA%/PressureFieldSimulator/default/devices.simulator.json` fájlt két eszközzel. A [webes felületen](https://timeonion.com/pressure_sensor/) adminnal belépve: **Admin → JSON kiválasztása és ellenőrzése → Importálás**. Válaszd ezt a fájlt; sikeres import után a készülékek „regisztrált” állapotúak. Azonos fájl ismételt importja ártalmatlan. A fájlt őrizd meg, ne tedd Gitbe vagy nyilvános tárhelyre. Újraindításkor ugyanazok az eszközök maradnak.
 2. Az app **Szolgáltatás címe** mezőjébe pontosan ezt írd: `https://timeonion.com/pressure_sensor/api/v1`. Lépj be a megerősített tesztfiókoddal.
 3. **Tesztpár előkészítése** → **Mérés indítása**. Hagyd bekapcsolva a **GPS** és **Traktor halad** kapcsolót, mérj legalább egy percet, majd **Mérés leállítása**. Várd meg: **Feltöltés rendben · 0 minta vár feltöltésre**.
 4. A [webes felületen](https://timeonion.com/pressure_sensor/) ugyanazzal a fiókkal a **Mérések** lapon keresd a `SIM ·` mérést, majd nyisd meg a **Térkép** lapot. GPS kikapcsolásával is van időbélyeges feltöltés, csak a hely nélküli minták nem rajzolhatók térképre.
@@ -53,4 +47,6 @@ A `--headless` csak a szimulátort indítja; leállítás Ctrl+C. Egyedi app-por
 
 A GitHub workflow futtatja a protokoll/claim-, újracsatlakozási, GPS nélküli és SQLite→feltöltés teszteket, és mindkét EXE-t a Windows-csomagba teszi. A CI service-válaszai helyettesítettek.
 
-2026-10-04: helyi, lefordított Windows-szimulátorral és az app tényleges hálózati kódjával az éles belépés, tokenfrissítés és listalekérés sikeres. A teljes szerveres mérési próbát a még nem importált teszteszközök akadályozzák (`409 claim_unavailable`); feltöltést és éles hőtérképet ezen az útvonalon még nem igazoltunk.
+2026-10-04: a helyi Windows-szimulátor EXE és a Flutter app valódi capture/SQLite/feltöltési kódja sikeresen használta az éles service-t: adminimport, HMAC-claim, pár, élő státusz, 660 feltöltött minta (439 GPS-szel, 221 helyadat nélkül), lezárás és üres feltöltési sor. A CSV 660 sort, a közös hőtérkép 8 cellát adott; a mérés és a térkép az éles Flutter weben, Edge-ben is látható, JavaScript-hiba nélkül. A próbához a natív pluginhívásokat helyettesítő tesztfuttató kapcsolódott a külön szimulátorfolyamathoz; a Windows app teljes kattintásos próbáját ez nem helyettesíti.
+
+Az integráció közben javítottuk a GPS-hozzárendelés pontosságát: a számítás megtartja a feltöltött GPS-időpontok mikroszekundumait. Régebbi app `invalid_location` hibát adhat; használd a javítást tartalmazó legfrissebb sikeres buildet. A regressziós eset a GitHub-tesztek része. A service ehhez nem igényelt módosítást.

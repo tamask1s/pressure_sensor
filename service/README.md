@@ -30,7 +30,7 @@ A [Windows-szimulátor](../app/SIMULATOR.md) a Flutter app teljes mérési és f
 python -m pressure.admin import /vedett/hely/devices.simulator.json
 ```
 
-A parancshoz a kiválasztott környezet `PRESSURE_DB` és `PRESSURE_KEY` beállítása szükséges. Az appban az adott környezet HTTPS API-címét add meg; a telepített service címe `https://timeonion.com/pressure_sensor/api/v1`. Nincs külön szimulátoros API vagy hitelesítési kivétel. A Windows-szimulátorral végzett teljes szerveres mérési próba külön ellenőrzés; az alábbi Python-program az API integrációs próbája.
+A parancshoz a kiválasztott környezet `PRESSURE_DB` és `PRESSURE_KEY` beállítása szükséges. Az appban az adott környezet HTTPS API-címét add meg; a telepített service címe `https://timeonion.com/pressure_sensor/api/v1`. Nincs külön szimulátoros API vagy hitelesítési kivétel. A Windows-szimulátorral végzett éles mérési/feltöltési és webes hőtérképpróba sikeres; eredménye a [szimulátor útmutatójában](../app/SIMULATOR.md). Az alábbi Python-program külön API-integrációs próba.
 
 ## Python API-szimulátor a saját gépeden
 

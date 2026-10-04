@@ -2,22 +2,25 @@ import 'model.dart';
 
 Json? interpolate(List<Json> fixes, int at, {int uncertainty = 0}) {
   if (uncertainty > 100 || fixes.length < 2) return null;
+  // Keep the precision sent to the service, including sub-millisecond fixes.
+  int time(Json fix) =>
+      DateTime.parse(fix['captured_at'] as String).microsecondsSinceEpoch;
+  final target = at * 1000;
   var lo = 0, hi = fixes.length;
   while (lo < hi) {
     final m = (lo + hi) ~/ 2;
-    if (milliseconds(fixes[m]['captured_at']) <= at) {
+    if (time(fixes[m]) <= target) {
       lo = m + 1;
     } else {
       hi = m;
     }
   }
-  if (lo == fixes.length && milliseconds(fixes.last['captured_at']) == at) lo--;
+  if (lo == fixes.length && time(fixes.last) == target) lo--;
   if (lo == 0 || lo == fixes.length) return null;
   final a = fixes[lo - 1], b = fixes[lo];
-  final ta = milliseconds(a['captured_at']),
-      tb = milliseconds(b['captured_at']);
+  final ta = time(a), tb = time(b);
   if (tb <= ta ||
-      tb - ta > 2000 ||
+      tb - ta > 2000000 ||
       a['segment_id'] != b['segment_id'] ||
       (a['accuracy_m'] as num) > 10 ||
       (b['accuracy_m'] as num) > 10 ||
@@ -25,7 +28,7 @@ Json? interpolate(List<Json> fixes, int at, {int uncertainty = 0}) {
       (b['accuracy_m'] as num) < 0) {
     return null;
   }
-  final fraction = (at - ta) / (tb - ta);
+  final fraction = (target - ta) / (tb - ta);
   double mix(String k) =>
       (a[k] as num).toDouble() + ((b[k] as num) - (a[k] as num)) * fraction;
   return {
