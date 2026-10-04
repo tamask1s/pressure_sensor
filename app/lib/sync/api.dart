@@ -123,7 +123,7 @@ class Api {
   Future<Json> call(
     String method,
     String path, {
-    Json? body,
+    Object? body,
     Map<String, String>? query,
     bool authenticated = true,
     bool retry = true,
@@ -144,7 +144,7 @@ class Api {
   Future<http.Response> request(
     String method,
     String path, {
-    Json? body,
+    Object? body,
     Map<String, String>? query,
     bool authenticated = true,
     bool retry = true,
@@ -200,7 +200,9 @@ class Api {
       throw ApiError(
         res.statusCode,
         error['code'] as String? ?? 'http_error',
-        error['code'] == 'claim_unavailable'
+        error['code'] == 'admin_required' || error['code'] == 'import_conflict'
+            ? error['message'] as String
+            : error['code'] == 'claim_unavailable'
             ? 'Az eszköz nem párosítható. Ellenőrizd a gyártói regisztrációját és hogy nem tartozik-e másik fiókhoz, majd nyisd újra a párosítási ablakot. Szimulátornál a devices.simulator.json fájlt előbb importálni kell a service-be.'
             : messages[res.statusCode] ??
                   error['message'] as String? ??
@@ -208,7 +210,9 @@ class Api {
       );
     }
     if (kIsWeb && path == '/auth/session' && res.bodyBytes.isNotEmpty) {
-      _csrf = object(jsonDecode(res.body))['csrf_token'] as String?;
+      final session = object(jsonDecode(res.body));
+      _csrf = session['csrf_token'] as String?;
+      account = object(session['account']);
     }
     return res;
   }

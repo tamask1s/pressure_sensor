@@ -9,6 +9,7 @@ import 'ui/overview.dart';
 import 'ui/devices.dart';
 import 'ui/history.dart';
 import 'ui/map.dart';
+import 'ui/admin.dart';
 
 void main(List<String> arguments) {
   WidgetsFlutterBinding.ensureInitialized();
@@ -199,11 +200,14 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 850;
+    final admin = kIsWeb && app.account?['is_admin'] == true;
+    if (!admin && index == 4) index = 0;
     final destinations = [
       (Icons.speed, kIsWeb ? 'Áttekintés' : 'Élő mérés'),
       (Icons.map_outlined, 'Térkép'),
       (Icons.history, 'Mérések'),
       (Icons.sensors, 'Eszközök'),
+      if (admin) (Icons.inventory_2_outlined, 'Admin'),
     ];
     final page = switch (index) {
       0 => OverviewPage(app, devices: () => select(3)),
@@ -219,6 +223,7 @@ class _HomeState extends State<Home> {
           index = 1;
         }),
       ),
+      4 => AdminDevicesPage(app.api, key: ValueKey(app.account?['id'])),
       _ => DevicesPage(app),
     };
     return Scaffold(

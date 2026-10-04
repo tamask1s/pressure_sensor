@@ -1448,6 +1448,146 @@
         }
       }
     },
+    "/api/v1/admin/devices": {
+      "get": {
+        "tags": [
+          "Admin device registry"
+        ],
+        "summary": "List all manufactured devices and their current owners",
+        "operationId": "devices_api_v1_admin_devices_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 32,
+              "pattern": "^[a-zA-Z0-9-]*$",
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^hps-[0-9a-f]{12}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistryPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/devices/import": {
+      "post": {
+        "tags": [
+          "Admin device registry"
+        ],
+        "summary": "Validate or atomically import up to 500 manufacturing records",
+        "description": "Accepts one provisioning record or a bare JSON list. Default dry_run=true changes no devices. Identical records are unchanged, conflicting metadata or keys reject the whole batch. Import never assigns an owner.",
+        "operationId": "import_devices_api_v1_admin_devices_import_post",
+        "parameters": [
+          {
+            "name": "dry_run",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Dry Run"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Provision"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Provision"
+                    },
+                    "minItems": 1,
+                    "maxItems": 500
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResult"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicting device; no devices changed"
+          },
+          "422": {
+            "description": "Invalid batch; no devices changed"
+          },
+          "403": {
+            "description": "Admin role or web CSRF check failed"
+          }
+        }
+      }
+    },
     "/api/v1/health": {
       "get": {
         "summary": "Health",
@@ -1841,6 +1981,96 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "ImportCounts": {
+        "properties": {
+          "new": {
+            "type": "integer",
+            "title": "New"
+          },
+          "unchanged": {
+            "type": "integer",
+            "title": "Unchanged"
+          },
+          "conflict": {
+            "type": "integer",
+            "title": "Conflict"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "new",
+          "unchanged",
+          "conflict"
+        ],
+        "title": "ImportCounts"
+      },
+      "ImportItem": {
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "pattern": "^hps-[0-9a-f]{12}$",
+            "title": "Device Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "unchanged",
+              "conflict"
+            ],
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_id",
+          "status"
+        ],
+        "title": "ImportItem"
+      },
+      "ImportResult": {
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run"
+          },
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "received": {
+            "type": "integer",
+            "title": "Received"
+          },
+          "unique": {
+            "type": "integer",
+            "title": "Unique"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/ImportCounts"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ImportItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dry_run",
+          "valid",
+          "received",
+          "unique",
+          "counts",
+          "items"
+        ],
+        "title": "ImportResult"
+      },
       "Location": {
         "properties": {
           "latitude": {
@@ -2040,6 +2270,25 @@
         ],
         "title": "Observation"
       },
+      "Owner": {
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "title": "Account Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "account_id",
+          "email"
+        ],
+        "title": "Owner"
+      },
       "Password": {
         "properties": {
           "password": {
@@ -2129,6 +2378,55 @@
         ],
         "title": "Proof"
       },
+      "Provision": {
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "pattern": "^hps-[0-9a-f]{12}$",
+            "title": "Device Id"
+          },
+          "secret_hex": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Secret Hex"
+          },
+          "sensor_serial": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "minimum": 0.0,
+            "title": "Sensor Serial"
+          },
+          "protocol_version": {
+            "type": "integer",
+            "const": 2,
+            "title": "Protocol Version"
+          },
+          "firmware_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Firmware Version"
+          },
+          "calibration": {
+            "$ref": "#/components/schemas/Calibration"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_id",
+          "secret_hex",
+          "sensor_serial",
+          "protocol_version",
+          "calibration"
+        ],
+        "title": "Provision"
+      },
       "Refresh": {
         "properties": {
           "refresh_token": {
@@ -2144,6 +2442,94 @@
           "refresh_token"
         ],
         "title": "Refresh"
+      },
+      "RegistryDevice": {
+        "properties": {
+          "device_id": {
+            "type": "string",
+            "pattern": "^hps-[0-9a-f]{12}$",
+            "title": "Device Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "registered",
+              "paired",
+              "retired"
+            ],
+            "title": "Status"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Owner"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sensor_serial": {
+            "type": "integer",
+            "title": "Sensor Serial"
+          },
+          "protocol_version": {
+            "type": "integer",
+            "title": "Protocol Version"
+          },
+          "firmware_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Firmware Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_id",
+          "status",
+          "owner",
+          "sensor_serial",
+          "protocol_version",
+          "firmware_version"
+        ],
+        "title": "RegistryDevice"
+      },
+      "RegistryPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RegistryDevice"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^hps-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "RegistryPage"
       },
       "Rename": {
         "properties": {

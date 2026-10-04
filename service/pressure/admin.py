@@ -1,13 +1,26 @@
-"""Local admin only. Provisioning secrets never go through HTTP."""
-import argparse, shutil, sys
+"""Local role management and shared manufacturer provisioning."""
+import argparse, hmac, shutil, sys
+from pydantic import ValidationError
 from .common import *
 from .models import Provision
+
+def same_provision(existing,p):
+    data=obj(dump(p)); data.pop('device_id'); secret=data.pop('secret_hex')
+    return hmac.compare_digest(unseal(existing['secret']),secret) and obj(existing['metadata'])==data
+
+def grant_admin(db,account_id,actor):
+    a=one(db,'SELECT verified FROM accounts WHERE id=?',(account_id,))
+    if not a or not a['verified']: raise ValueError('An existing, verified account ID is required')
+    db.execute("INSERT OR IGNORE INTO account_roles VALUES(?,'admin',?)",(account_id,now()))
+    audit(db,actor,'grant_admin',target_account=account_id)
 
 def provision(db,p,transfer=False):
     data=obj(dump(p)); id=data.pop('device_id'); secret=data.pop('secret_hex')
     existing=one(db,'SELECT * FROM devices WHERE id=?',(id,))
     if existing:
-        if not transfer: raise ValueError('Device already imported; use explicit transfer after syncing')
+        if not transfer:
+            if same_provision(existing,p): return
+            raise ValueError('Conflicting device; use explicit transfer after syncing')
         active=one(db,"SELECT 1 FROM sessions WHERE account=? AND status='recording' AND EXISTS(SELECT 1 FROM json_each(start,'$.devices') WHERE json_extract(value,'$.device_id')=?)",(existing['account'],id))
         if active: raise ValueError('Complete all recordings before transfer')
         if unseal(existing['secret'])==secret: raise ValueError('Transfer requires a new hardware secret and BLE PIN/bonds reset')
@@ -25,9 +38,19 @@ def main():
         s=sub.add_parser(name); s.add_argument('file')
     s=sub.add_parser('simulator-profile'); s.add_argument('file'); s.add_argument('--pairs',type=int,default=2)
     s=sub.add_parser('backup'); s.add_argument('file')
+    for name in ['grant-admin','revoke-admin']:
+        s=sub.add_parser(name); s.add_argument('account_id')
     sub.add_parser('init')
     args=p.parse_args(); init()
     if args.command=='init': return
+    if args.command in ('grant-admin','revoke-admin'):
+        with connect(True) as db:
+            actor='server:'+str(os.getuid())
+            if args.command=='grant-admin': grant_admin(db,args.account_id,actor)
+            else:
+                db.execute('DELETE FROM account_roles WHERE account=?',(args.account_id,))
+                audit(db,actor,'revoke_admin',target_account=args.account_id)
+        print('Role updated for account:',args.account_id); return
     if args.command=='backup':
         if Path(args.file).exists(): raise ValueError('Backup destination already exists')
         if shutil.disk_usage(str(Path(args.file).parent)).free < 2*Path(DB).stat().st_size+256*1024*1024: raise ValueError('Insufficient space for backup')
@@ -51,10 +74,15 @@ def main():
         with open(os.open(args.file,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'w') as f:
             with connect(True) as db:
                 for d in devices: provision(db,Provision.model_validate(d))
+                audit(db,'server:'+str(os.getuid()),'simulator_profile',[d['device_id'] for d in devices])
                 f.write(json.dumps({'warning':'Simulated devices only. Keep this file private.','devices':devices},indent=2))
         print('Imported simulated devices. Private profile:',args.file); return
     content=obj(Path(args.file).read_text()); devices=content if isinstance(content,list) else content.get('devices',[content])
     with connect(True) as db:
         for d in devices: provision(db,Provision.model_validate(d),args.command=='transfer')
+        audit(db,'server:'+str(os.getuid()),args.command,[d['device_id'] for d in devices])
     print('Imported devices:',len(devices))
-if __name__=='__main__': main()
+if __name__=='__main__':
+    try: main()
+    except (ValidationError,json.JSONDecodeError):
+        raise SystemExit('Invalid provisioning JSON; no devices changed') from None

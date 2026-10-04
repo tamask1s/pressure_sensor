@@ -24,7 +24,7 @@ Telepítés ezen a hoston: `sudo python3 service/ops/deploy.py`. Előtte tesztek
 
 ## Windows eszközszimulátor
 
-A [Windows-szimulátor](../app/SIMULATOR.md) a Flutter app teljes mérési és feltöltési útját használja. A service admin-importja fogadja az általa létrehozott `devices.simulator.json` JSON-listát, változtatás nélkül. A fájl eszköztitkokat tartalmaz: védett csatornán add át az adminnak, és tesztkörnyezetbe importáld:
+A [Windows-szimulátor](../app/SIMULATOR.md) a Flutter app teljes mérési és feltöltési útját használja. Az admin webfelület és a szerveroldali parancs fogadja az általa létrehozott `devices.simulator.json` JSON-listát, változtatás nélkül. A fájl eszköztitkokat tartalmaz: védett csatornán add át az adminnak. Parancssori import:
 
 ```sh
 python -m pressure.admin import /vedett/hely/devices.simulator.json
@@ -69,9 +69,28 @@ A [provisioning](../fw/PROVISIONING.md) szerinti, eszközbe írt 32 bájtos tito
 sudo bash /opt/pressure_sensor/current/service/ops/admin.sh import /vedett/hely/device.json
 ```
 
-Ezután regisztrált felhasználó az appban a fizikai BLE-párosítási ablak alatt claimel. A privát titok nem API-mező. Tulajdonosváltás: előbb szinkron és lezárás, új hardverkulcs/PIN és bondok törlése, majd `transfer` ugyanilyen importfájllal. A régi tulajdonos előzménye megmarad, de új offline feltöltést már nem fogadunk tőle az átadott eszközhöz.
+Ezután regisztrált felhasználó az appban a fizikai BLE-párosítási ablak alatt claimel. A privát titok kizárólag az admin-import bemenetében szerepelhet; válaszban és vásárlói API-ban nincs. Tulajdonosváltás: előbb szinkron és lezárás, új hardverkulcs/PIN és bondok törlése, majd `transfer` ugyanilyen importfájllal. A régi tulajdonos előzménye megmarad, de új offline feltöltést már nem fogadunk tőle az átadott eszközhöz.
 
 Natív appban az API-cím `https://timeonion.com/pressure_sensor/api/v1`.
+
+## Admin / Eszköznyilvántartás
+
+Adminnal belépve a weben az **Admin** menü mutatja a teljes gyártói listát: eszközazonosító, regisztrált/párosított/visszavont állapot, szenzor és firmware, valamint párosítás után a tulajdonos e-mail-címe és fiókazonosítója. Azonosítórészletre kereshető, 50-esével lapozható. Az adminjog mások méréseit nem teszi elérhetővé.
+
+1. **JSON kiválasztása és ellenőrzése**: egy [gyártási rekord](../fw/PROVISIONING.md) vagy a Windows `%LOCALAPPDATA%/PressureFieldSimulator/default/devices.simulator.json` fájlja. Legfeljebb 500 rekord / 512 KiB. A firmware és az import ugyanazt a készülékenkénti titkot használja.
+2. Az előnézet megmutatja az új, változatlan és ütköző eszközöket. **Importálás** csak sikeres ellenőrzés után aktív. Azonos rekord ismétlése ártalmatlan; eltérő kulcs vagy metaadat esetén a teljes fájl elutasításra kerül, meglévő titok/tulajdonos/előzmény nem változik. Az importáláskor a szerver újra ellenőriz mindent.
+3. Az új eszköz tulajdonos nélkül kerül be. A vásárló ezután az app normál BLE/HMAC-párosítását használja; a Windows-szimulátornál a szimulált eszközök rendes claimje történik.
+
+A kiválasztott titkok csak az oldal memóriájában maradnak az importig vagy az oldal elhagyásáig; nem kerülnek böngészőtárolóba. A listázás, ellenőrzés, import és szerepkörmódosítás a saját DB `admin_audit` táblájába kerül: idő, végrehajtó, művelet, érintett azonosítók, eredmény, kérésazonosító; titkok nélkül.
+
+API: `GET /api/v1/admin/devices?q=hps-...&limit=50&cursor=hps-...`; `POST /api/v1/admin/devices/import?dry_run=true` (alapértelmezett előnézet), majd ugyanaz a JSON `dry_run=false` mellett. Mindkettő aktuális DB-adminjogot igényel; weben a meglévő HttpOnly session és Origin/CSRF-védelem él. A tulajdonos e-mail-címe csak az adminlistában látható.
+
+Jogosultság kizárólag szerveroldalon, egy létező, megerősített fiók UUID-jára adható; újraregisztrálás és e-mail-egyezés nem örökíti. Az élő session azonnal használja a megváltozott jogot, a web rövid időn belül frissíti a menüt:
+
+```sh
+sudo -u pressure-sensor bash /opt/pressure_sensor/current/service/ops/admin.sh grant-admin FIÓK_UUID
+sudo -u pressure-sensor bash /opt/pressure_sensor/current/service/ops/admin.sh revoke-admin FIÓK_UUID
+```
 
 ## Mentés és visszaállítás
 
@@ -81,7 +100,7 @@ Kézi próba: `sudo systemctl start pressure_sensor-backup.service`.
 
 Visszaállítás: csak a `pressure_sensor.service` leállítása; az aktuális DB és `-wal`/`-shm` fájlok megőrzése külön könyvtárban; a kiválasztott `.sqlite3.gz` kibontása új `pressure.sqlite3`-ba. Ellenőrzés `PRAGMA integrity_check`, a mentéshez tartozó `PRESSURE_KEY` beállítása, `chown pressure-sensor:pressure-sensor`, 0600 fájljogosultság, majd indítás és health-ellenőrzés. Élő WAL-adatbázist egyszerű `cp`-vel ne ments.
 
-A séma első verziója a `pressure/schema.sql`; induláskor idempotensen alkalmazódik. Új sémaváltozáshoz explicit új verzió és migráció szükséges. Ez a kiadás nem módosít meglévő külső DB-sémát.
+A séma első verziója a `pressure/schema.sql`; a második verziót a `pressure/migrations/002_admin.sql` tranzakciósan adja hozzá. Csak két új tábla keletkezik (jogok és audit); a meglévő fiókok, eszközök, sessionök és mérések változatlanok. Induláskor a `user_version` alapján egyszer fut le. Telepítés előtt készíts mentést. Más alkalmazás adatbázisa nem változik.
 
 ## Tesztelés és build
 
@@ -92,7 +111,13 @@ PRESSURE_SOAK=1 PYTHONPATH=service:service/.deps /opt/mesemondo/venv/bin/python 
 
 A tesztek ideiglenes DB-t és teszt e-mail outboxot használnak, nem küldenek levelet. A soak 576 000 teljes mintát HTTP API-n keresztül ír és térképet kér. A mentés-visszaállítás külön, 400 mintás teszten is lefut; a nagy adatbázist csak elegendő szabad hely esetén duplázza. A visszaállított DB-n ugyanazt az API-eredményt ellenőrzi.
 
-A jelenlegi Flutter artifact a GitHub `37185480118` futás `web` artifactja (`731e617974b19f231c2a14104b47ca2ee0c356c7` commit). Letöltés után SHA256-ellenőrzés, a base href, az egyszer előforduló API-prefix és a domainre korlátozott Referer-policy átírása történik `ops/prepare_web.py`-ban. A forrás és a GitHub workflow már a helyes prefixet tartalmazza; a következő buildhez:
+A GitHub workflow külön `service` feladata futtatja az összes API-tesztet (adminjog, atomikusság, ismétlés/ütközés, titokelrejtés, import → normál claim → mérés). A `web` feladat formázást, analizátort és admin widgetteszteket futtat, majd a megfelelő prefixszel buildel. A `web` artifact letöltését a GitHub által megadott SHA256 digesttel kell ellenőrizni. Az `ops/prepare_web.py` ellenőrzi és kibontja a már helyesen buildelt csomagot:
+
+```sh
+python3 service/ops/prepare_web.py /tmp/pressure-web.zip SHA256_A_GITHUB_ARTIFACT_ADATAIBÓL
+```
+
+Web build helyi fejlesztői gépen:
 
 ```sh
 cd app

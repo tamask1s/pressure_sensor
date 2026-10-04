@@ -26,7 +26,16 @@ def digest(v): return hashlib.sha256(v.encode()).hexdigest()
 def b64(v): return base64.urlsafe_b64encode(v).decode().rstrip('=')
 def fail(status, code, message=None): raise HTTPException(status, {'code':code,'message':message or code})
 def init():
-    with sqlite3.connect(DB) as db: db.executescript((BASE/'schema.sql').read_text())
+    with sqlite3.connect(DB) as db:
+        version=db.execute('PRAGMA user_version').fetchone()[0]
+        if version>2: raise RuntimeError('Unsupported database version')
+        if version==0: db.executescript((BASE/'schema.sql').read_text())
+        if version<2: db.executescript((BASE/'migrations/002_admin.sql').read_text())
+def is_admin(db,account_id):
+    return one(db,"SELECT 1 FROM account_roles WHERE account=? AND role='admin'",(account_id,)) is not None
+def audit(db,actor,action,device_ids=(),outcome='ok',request_id=None,target_account=None):
+    db.execute('INSERT INTO admin_audit(at,actor,action,device_ids,outcome,request_id,target_account) VALUES(?,?,?,?,?,?,?)',
+        (now(),actor,action,dump(sorted(set(device_ids))),outcome,request_id,target_account))
 @contextmanager
 def connect(write=False):
     db=sqlite3.connect(DB,timeout=10,isolation_level=None,check_same_thread=False)

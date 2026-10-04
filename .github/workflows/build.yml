@@ -19,6 +19,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  service:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Service dependencies in an isolated environment
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libargon2-1
+          python3 -m venv /tmp/pressure-ci
+          /tmp/pressure-ci/bin/pip install -r service/requirements.txt httpx==0.28.1 pytest==9.1.1
+      - name: Auth, atomic import, replay, redaction and claim-to-measurement tests
+        run: PYTHONPATH=service /tmp/pressure-ci/bin/python -m pytest service/tests -q -o faulthandler_timeout=30
+
+  web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: '3.35.4'
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: dart format --output=none --set-exit-if-changed lib bin test
+      - run: flutter analyze --no-pub
+      - run: flutter test --no-pub test/admin_test.dart
+      - run: flutter build web --release --no-pub --no-web-resources-cdn --pwa-strategy=none --base-href=/pressure_sensor/ --dart-define=API_URL=/pressure_sensor/api/v1
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: web
+          path: app/build/web/
+          if-no-files-found: error
+          retention-days: 7
+
   windows:
     runs-on: windows-2022
     timeout-minutes: 30
@@ -62,7 +105,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  android-web:
+  android:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     defaults:
@@ -92,14 +135,6 @@ jobs:
           path: app/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 7
-      - run: flutter build web --release --no-pub --no-web-resources-cdn --pwa-strategy=none --base-href=/pressure_sensor/ --dart-define=API_URL=/pressure_sensor/api/v1
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        with:
-          name: web
-          path: app/build/web/
-          if-no-files-found: error
-          retention-days: 7
-
   firmware:
     runs-on: ubuntu-24.04
     timeout-minutes: 25

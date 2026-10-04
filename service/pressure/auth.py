@@ -10,7 +10,7 @@ COOKIE='pressure_session'
 COOKIE_PATH=urlsplit(PUBLIC).path+'/'
 ORIGIN=f'{urlsplit(PUBLIC).scheme}://{urlsplit(PUBLIC).netloc}'
 def database(request:Request):
-    with connect(request.method not in ('GET','HEAD','OPTIONS')) as db: yield db
+    with connect(request.method not in ('GET','HEAD','OPTIONS') or '/api/v1/admin/' in request.url.path) as db: yield db
 
 def authenticated(request:Request, db=Depends(database, scope="function")):
     bearer=request.headers.get('authorization','')
@@ -24,7 +24,7 @@ def authenticated(request:Request, db=Depends(database, scope="function")):
         if request.headers.get('origin')!=ORIGIN or not hmac.compare_digest(request.headers.get('x-csrf-token',''),a['csrf']): fail(403,'csrf')
     return a
 
-def account(a): return {'id':a['account'],'email':a['email']}
+def account(db,a): return {'id':a['account'],'email':a['email'],'is_admin':is_admin(db,a['account'])}
 def queue_token(db,a,kind):
     token=random()
     db.execute('DELETE FROM tokens WHERE account=? AND kind=?',(a['id'],kind))
@@ -73,7 +73,7 @@ def issue(db,a,kind,response,auth_id=None):
         db.execute('DELETE FROM auth WHERE id=?',(auth_id,))
     until=min(expires,now()+(900 if kind=='native' else 86400))
     db.execute('INSERT INTO auth VALUES(?,?,?,?,?,?,?,?)',(id,a['id'],kind,digest(access),digest(refresh) if kind=='native' else None,csrf,until,expires))
-    result={'account':{'id':a['id'],'email':a['email']}}
+    result={'account':account(db,{'account':a['id'],'email':a['email']})}
     if kind=='native': result.update(access_token=access,refresh_token=refresh,expires_in=900)
     else: response.set_cookie(COOKIE,access,max_age=86400,httponly=True,secure=True,samesite='strict',path=COOKIE_PATH)
     return result
@@ -91,8 +91,8 @@ def refresh(body:Refresh,response:Response,db=Depends(database, scope="function"
     if not a: fail(401,'invalid_refresh')
     return issue(db,{'id':a['account'],'email':a['email']},'native',response,a['id'])
 @router.get('/auth/session')
-def session(a=Depends(authenticated)):
-    return {'account':account(a),'csrf_token':a['csrf'] if a['kind']=='web' else None,'expires_at':iso(a['access_until'])}
+def session(a=Depends(authenticated),db=Depends(database, scope="function")):
+    return {'account':account(db,a),'csrf_token':a['csrf'] if a['kind']=='web' else None,'expires_at':iso(a['access_until'])}
 @router.post('/auth/logout',status_code=204)
 def logout(response:Response,a=Depends(authenticated),db=Depends(database, scope="function")):
     db.execute('DELETE FROM auth WHERE id=?',(a['id'],)); response.delete_cookie(COOKIE,path=COOKIE_PATH)

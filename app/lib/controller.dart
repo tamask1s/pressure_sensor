@@ -193,8 +193,10 @@ class AppController extends ChangeNotifier {
   Future<void> refreshCatalog() async {
     if (local) return;
     final current = account?['id'];
+    if (kIsWeb) await api.call('GET', '/auth/session');
     final d = await api.list('/devices'), r = await api.list('/rigs');
     if (account?['id'] != current || current == null) return;
+    if (kIsWeb) account = api.account;
     devices = d;
     _catalogAt = _age.elapsedMilliseconds;
     rigs = r.where((r) => r['archived'] != true).toList();

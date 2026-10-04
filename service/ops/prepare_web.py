@@ -1,9 +1,25 @@
-"""Rebase the verified, prebuilt upstream web artifact without installing Flutter."""
+"""Verify a GitHub Actions web artifact and stage it without installing Flutter."""
+import argparse, hashlib, shutil, tempfile, zipfile
 from pathlib import Path
-import hashlib, zipfile
+
+p=argparse.ArgumentParser()
+p.add_argument('archive',type=Path)
+p.add_argument('sha256',help='Expected digest from the GitHub artifact API')
+args=p.parse_args()
+if hashlib.sha256(args.archive.read_bytes()).hexdigest()!=args.sha256.removeprefix('sha256:'):
+    raise SystemExit('Artifact digest mismatch')
 root=Path(__file__).resolve().parents[1]
-archive=Path('/tmp/pressure-web.zip')
-assert hashlib.sha256(archive.read_bytes()).hexdigest()=='4408cb92b76b9d7cb6ad5ce4dc8cfe4b1faaa252fffd22f2698daa8ce723c3b8'
-with zipfile.ZipFile(archive) as z: z.extractall(root/'web')
-p=root/'web/index.html'; s=p.read_text(); assert '<base href="/">' in s; p.write_text(s.replace('<base href="/">','<base href="/pressure_sensor/">').replace('name="referrer" content="no-referrer"','name="referrer" content="strict-origin"'))
-p=root/'web/main.dart.js'; s=p.read_text(); assert s.count('"/api/v1"')==1; p.write_text(s.replace('"/api/v1"','"/pressure_sensor/api/v1"'))
+with tempfile.TemporaryDirectory(prefix='pressure-web-',dir=root) as folder:
+    stage=Path(folder)
+    with zipfile.ZipFile(args.archive) as z:
+        for name in z.namelist():
+            if not (stage/name).resolve().is_relative_to(stage): raise SystemExit('Invalid artifact path')
+        z.extractall(stage)
+    html=(stage/'index.html').read_text()
+    if '<base href="/pressure_sensor/">' not in html: raise SystemExit('Incorrect web base path')
+    if 'name="referrer" content="strict-origin"' not in html: raise SystemExit('Incorrect referrer policy')
+    if '/pressure_sensor/api/v1' not in (stage/'main.dart.js').read_text(): raise SystemExit('Incorrect API path')
+    target=root/'web'
+    if target.exists(): shutil.rmtree(target)
+    shutil.copytree(stage,target)
+print('Verified web artifact staged in service/web')

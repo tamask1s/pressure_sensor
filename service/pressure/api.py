@@ -1,4 +1,4 @@
-import asyncio, logging, threading
+import asyncio, logging, re, threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, Request
@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 from .common import *
-from . import auth, devices, measurements, grid, mail
+from . import auth, devices, measurements, grid, mail, registry
 from .security import rate
 
 @asynccontextmanager
@@ -29,6 +29,15 @@ async def http_error(request,exc):
     return error(request,exc.status_code,d['code'],d['message'])
 @app.exception_handler(RequestValidationError)
 async def validation(request,exc):
+    if '/api/v1/admin/' in request.url.path:
+        actor=getattr(request.state,'admin_account',None)
+        if actor:
+            records=exc.body if isinstance(exc.body,list) else [exc.body]
+            ids=[p['device_id'] for p in records if isinstance(p,dict) and isinstance(p.get('device_id'),str) and re.fullmatch(r'hps-[0-9a-f]{12}',p['device_id'])]
+            def record():
+                with connect(True) as db: audit(db,actor,'invalid_admin_request',ids,outcome='invalid',request_id=request.state.request_id)
+            await asyncio.to_thread(record)
+        return error(request,422,'invalid_fields','Hibás import vagy paraméter. Egy gyártási rekord vagy 1–500 rekordból álló JSON-lista szükséges, érvényes eszközadatokkal.')
     return error(request,422,'invalid_fields','Hibás vagy hiányzó mező: '+', '.join('.'.join(map(str,x['loc'])) for x in exc.errors()[:8]))
 @app.exception_handler(sqlite3.Error)
 async def database_error(request,exc):
@@ -62,7 +71,7 @@ async def guard(request:Request,call_next):
     response.headers['Referrer-Policy']='no-referrer'
     response.headers['X-Content-Type-Options']='nosniff'
     return response
-for router in [auth.router,devices.router,measurements.router,grid.router]: app.include_router(router)
+for router in [auth.router,devices.router,measurements.router,grid.router,registry.router]: app.include_router(router)
 @app.get('/api/v1/health')
 def health():
     with connect() as db: one(db,'SELECT 1')
