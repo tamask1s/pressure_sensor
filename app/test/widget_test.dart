@@ -53,6 +53,69 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     app.dispose();
   });
+  testWidgets(
+    'Simulator controls fit phone and desktop and label synthetic data',
+    (tester) async {
+      final app = AppController(simulated: true)
+        ..account = {'id': 'local', 'email': 'Helyi használat'};
+      app.capture.state['simulator'] = {
+        'gps': true,
+        'moving': true,
+        'devices': [
+          for (final role in ['A', 'B'])
+            {
+              'id': role == 'A' ? 'hps-020000000001' : 'hps-020000000002',
+              'role': role,
+              'online': true,
+              'sensor_error': false,
+              'pressure_bar': null,
+            },
+        ],
+      };
+      final boundary = GlobalKey();
+      for (final size in [const Size(360, 900), const Size(1280, 900)]) {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1;
+        await tester.pumpWidget(
+          RepaintBoundary(
+            key: boundary,
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: pressureTheme(
+                fontFamily: const bool.fromEnvironment('SCREENSHOTS')
+                    ? 'Preview'
+                    : null,
+              ),
+              home: Home(app),
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.text('Talajnyomás · SZIMULÁTOR'), findsOneWidget);
+        expect(find.text('Tesztpár előkészítése'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        if (const bool.fromEnvironment('SCREENSHOTS')) {
+          await tester.runAsync(() async {
+            final image =
+                await (boundary.currentContext!.findRenderObject()
+                        as RenderRepaintBoundary)
+                    .toImage();
+            final bytes = await image.toByteData(
+              format: ui.ImageByteFormat.png,
+            );
+            final file = File('../.tools/simulator-${size.width.toInt()}.png');
+            await file.parent.create(recursive: true);
+            await file.writeAsBytes(bytes!.buffer.asUint8List());
+            image.dispose();
+          });
+        }
+      }
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      await tester.pumpWidget(const SizedBox());
+      app.dispose();
+    },
+  );
   testWidgets('Live pair fits a phone and desktop without overflow', (
     tester,
   ) async {

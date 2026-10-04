@@ -10,9 +10,23 @@ import 'ui/devices.dart';
 import 'ui/history.dart';
 import 'ui/map.dart';
 
-void main() {
+void main(List<String> arguments) {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const PressureApp());
+  final simulated =
+      !kIsWeb &&
+      defaultTargetPlatform == TargetPlatform.windows &&
+      arguments.contains('--simulator');
+  final port =
+      int.tryParse(
+        arguments
+                .where((a) => a.startsWith('--simulator-port='))
+                .firstOrNull
+                ?.split('=')
+                .last ??
+            '',
+      ) ??
+      47832;
+  runApp(PressureApp(simulated: simulated, simulationPort: port));
 }
 
 ThemeData pressureTheme({String? fontFamily}) => ThemeData(
@@ -55,13 +69,22 @@ ThemeData pressureTheme({String? fontFamily}) => ThemeData(
 );
 
 class PressureApp extends StatefulWidget {
-  const PressureApp({super.key});
+  final bool simulated;
+  final int simulationPort;
+  const PressureApp({
+    super.key,
+    this.simulated = false,
+    this.simulationPort = 47832,
+  });
   @override
   State<PressureApp> createState() => _AppState();
 }
 
 class _AppState extends State<PressureApp> {
-  final app = AppController();
+  late final app = AppController(
+    simulated: widget.simulated,
+    simulationPort: widget.simulationPort,
+  );
   @override
   void initState() {
     super.initState();
@@ -200,16 +223,16 @@ class _HomeState extends State<Home> {
     };
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.landscape_rounded, color: green),
-            SizedBox(width: 10),
+            const Icon(Icons.landscape_rounded, color: green),
+            const SizedBox(width: 10),
             Flexible(
               child: Text(
-                'Talajnyomás',
+                app.simulated ? 'Talajnyomás · SZIMULÁTOR' : 'Talajnyomás',
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontWeight: FontWeight.w700),
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
           ],

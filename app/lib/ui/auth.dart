@@ -145,6 +145,13 @@ class _AuthState extends State<AuthPage> {
                     'Két érzékelő. Egy mérés. A földjeid áttekinthető képe.',
                   ),
                   const SizedBox(height: 28),
+                  if (app.simulated)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 20),
+                      child: Hint(
+                        'SZIMULÁTOR · Mesterséges nyomás és helyadatok. Próbáld ki fiók nélkül, vagy jelentkezz be egy service-tesztfiókkal. A teszteszközöket előbb importálni kell a service-be.',
+                      ),
+                    ),
                   if (notice.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20),

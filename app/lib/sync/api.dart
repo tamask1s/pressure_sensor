@@ -14,13 +14,15 @@ class ApiError extends UserError {
 
 class Api {
   final http.Client client;
+  final String vaultNamespace;
   String base;
   Json? account;
   String? _access, _refresh, _csrf;
   Future<void>? _refreshing;
-  Api(this.base, {http.Client? client}) : client = client ?? createClient();
+  Api(this.base, {http.Client? client, this.vaultNamespace = ''})
+    : client = client ?? createClient();
   bool get configured => base.isNotEmpty;
-  String get vaultKey => 'auth:$base';
+  String get vaultKey => '${vaultNamespace}auth:$base';
   Future<void> restore() async {
     if (!configured) return;
     if (kIsWeb) {

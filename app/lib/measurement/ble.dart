@@ -3,21 +3,22 @@ import 'dart:math';
 import 'package:bluetooth_low_energy/bluetooth_low_energy.dart';
 import '../core/model.dart';
 import '../core/protocol.dart';
+import 'device_hub.dart';
 
-class Peer {
+class Peer extends DevicePeer {
   final Peripheral peripheral;
-  final Json info;
   final Map<String, GATTCharacteristic> characteristics;
-  DeviceClock? clock;
-  bool busy = false;
   int requestId = 1;
-  Peer(this.peripheral, this.info, this.characteristics);
+  Peer(this.peripheral, Json info, this.characteristics) : super(info);
 }
 
-class BleHub {
+class BleHub implements DeviceHub {
   final CentralManager manager = CentralManager();
+  @override
   final events = StreamController<Json>.broadcast();
-  final discovered = <String, DiscoveredEventArgs>{}, peers = <String, Peer>{};
+  final discovered = <String, DiscoveredEventArgs>{};
+  @override
+  final Map<String, Peer> peers = {};
   final desired = <String>{}, manual = <String>{}, connecting = <String>{};
   final nextAttempt = <String, DateTime>{}, attempts = <String, int>{};
   final subscriptions = <StreamSubscription>[];
@@ -86,6 +87,7 @@ class BleHub {
     );
     timer = Timer.periodic(const Duration(seconds: 1), (_) => _reconnect());
   }
+  @override
   Future<void> scan() =>
       _scanWork ??= _scan().whenComplete(() => _scanWork = null);
   Future<void> _scan() async {
@@ -158,6 +160,7 @@ class BleHub {
     );
   }
 
+  @override
   Future<Peer> connect(String peripheral, {String? expected}) async {
     if (disposed) throw const UserError('A kapcsolatkezelő már leállt.');
     final found = discovered[peripheral];
@@ -254,7 +257,8 @@ class BleHub {
     }
   }
 
-  Future<Json> command(Peer peer, Json command) async {
+  @override
+  Future<Json> command(covariant Peer peer, Json command) async {
     if (peer.busy) {
       throw const UserError('Az eszköz még az előző műveletet végzi.');
     }
@@ -296,7 +300,8 @@ class BleHub {
     }
   }
 
-  Future<void> synchronize(Peer p) async {
+  @override
+  Future<void> synchronize(covariant Peer p) async {
     DeviceClock? best;
     var bestRtt = 1 << 30;
     for (var i = 0; i < 3; ++i) {
@@ -326,6 +331,7 @@ class BleHub {
     }
   }
 
+  @override
   Future<void> select(List<Json> devices) async {
     final ids = devices.map((e) => e['id'] as String).toSet();
     for (final id in peers.keys.toList()) {
@@ -339,6 +345,7 @@ class BleHub {
     await _reconnect();
   }
 
+  @override
   Future<void> disconnect(String id) async {
     manual.add(id);
     final peer = peers.remove(id);
@@ -346,6 +353,7 @@ class BleHub {
     events.add({'type': 'disconnected', 'device_id': id});
   }
 
+  @override
   Future<void> dispose() async {
     disposed = true;
     timer?.cancel();

@@ -2,7 +2,8 @@ import '../core/model.dart';
 import '../storage/store_api.dart';
 import 'capture_api.dart';
 
-Capture createCapture() => WebCapture();
+Capture createCapture({bool simulated = false, int simulationPort = 47832}) =>
+    WebCapture();
 
 class WebCapture implements Capture {
   @override

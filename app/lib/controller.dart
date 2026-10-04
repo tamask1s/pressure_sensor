@@ -9,17 +9,29 @@ import 'storage/store.dart';
 import 'sync/api.dart';
 import 'sync/uploader.dart';
 import 'platform/vault.dart';
+import 'simulator/engine.dart' show simulatorPort;
 
 const hasGps = bool.fromEnvironment('HAS_GPS', defaultValue: true);
 
 class AppController extends ChangeNotifier {
-  final Api api = Api(
-    const String.fromEnvironment(
-      'API_URL',
-      defaultValue: kIsWeb ? '/api/v1' : '',
-    ),
-  );
-  Capture capture = createCapture();
+  final bool simulated;
+  final int simulationPort;
+  final Api api;
+  Capture capture;
+  AppController({this.simulated = false, this.simulationPort = simulatorPort})
+    : api = Api(
+        const String.fromEnvironment(
+          'API_URL',
+          defaultValue: kIsWeb ? '/api/v1' : '',
+        ),
+        vaultNamespace: simulated ? 'sim:$simulationPort:' : '',
+      ),
+      capture = createCapture(
+        simulated: simulated,
+        simulationPort: simulationPort,
+      );
+  String get settingsKey =>
+      simulated ? 'sim:$simulationPort:settings' : 'settings';
   Store? store;
   Uploader? uploader;
   Json? account, rig;
@@ -53,7 +65,7 @@ class AppController extends ChangeNotifier {
 
   Future<void> init() async {
     try {
-      final config = await readVault('settings');
+      final config = await readVault(settingsKey);
       if (!kIsWeb && config?['api'] is String) api.base = config!['api'];
       collector = config?['collector'] as String? ?? collector;
       await api.restore();
@@ -80,7 +92,7 @@ class AppController extends ChangeNotifier {
       api.base = old;
       rethrow;
     }
-    await writeVault('settings', {'api': api.base, 'collector': collector});
+    await writeVault(settingsKey, {'api': api.base, 'collector': collector});
     changed();
   }
 
@@ -100,12 +112,12 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> _open() async {
-    await writeVault('settings', {'api': api.base, 'collector': collector});
+    await writeVault(settingsKey, {'api': api.base, 'collector': collector});
     if (!kIsWeb) {
       final scope = local
           ? 'local'
           : '${sha256.convert(utf8.encode(api.base)).toString().substring(0, 16)}-${account!['id']}';
-      store = await openStore(scope);
+      store = await openStore(simulated ? 'sim-$simulationPort-$scope' : scope);
       await capture.recover(store!);
       final cache = await store!.meta('catalog');
       devices = objects(cache?['devices']);
@@ -155,7 +167,10 @@ class AppController extends ChangeNotifier {
     }
     await _captureEvents?.cancel();
     await capture.dispose();
-    capture = createCapture();
+    capture = createCapture(
+      simulated: simulated,
+      simulationPort: simulationPort,
+    );
     if (!wasLocal) {
       try {
         await api.logout();
@@ -255,6 +270,41 @@ class AppController extends ChangeNotifier {
     changed();
   }
 
+  Future<void> prepareSimulation() async {
+    if (!simulated || recording) {
+      throw const UserError('Előbb állítsd le a mérést.');
+    }
+    await capture.command('simulator', {'action': 'pairing'});
+    await capture.scan();
+    final found = objects(capture.state['discovered']);
+    if (found.length != 2) {
+      throw const UserError('Kapcsold be mindkét szimulált érzékelőt.');
+    }
+    if (!local) await refreshCatalog();
+    final selected = <String>[];
+    for (var i = 0; i < found.length; i++) {
+      final p = found[i]['peripheral'] as String;
+      final info = await capture.inspect(p);
+      selected.add(info['device_id'] as String);
+      if (!devices.any((d) => d['id'] == info['device_id'])) {
+        await addDevice(p, 'Szimulált ${i == 0 ? 'A' : 'B'}');
+      }
+    }
+    final existing = rigs
+        .where(
+          (r) =>
+              selected.contains(r['device_a_id']) &&
+              selected.contains(r['device_b_id']),
+        )
+        .firstOrNull;
+    if (existing != null) {
+      await connectRig(existing);
+    } else {
+      await saveRig('Szimulált traktor', selected[0], selected[1]);
+    }
+    changed();
+  }
+
   Future<void> saveRig(String name, String a, String b) async {
     if (recording) throw const UserError('Előbb állítsd le a mérést.');
     if (a == b || name.trim().isEmpty) {
@@ -346,9 +396,8 @@ class AppController extends ChangeNotifier {
       'collector_id': collector,
       'rig_id': r['id'],
       'rig_revision': r['revision'],
-      'name': name.trim().isEmpty
-          ? '${r['name']} · ${now.toLocal().toString().substring(0, 16)}'
-          : name.trim(),
+      'name':
+          '${simulated ? 'SIM · ' : ''}${name.trim().isEmpty ? '${r['name']} · ${now.toLocal().toString().substring(0, 16)}' : name.trim()}',
       'started_at': now.toIso8601String(),
       'gps_enabled': hasGps,
       'devices': snapshot,

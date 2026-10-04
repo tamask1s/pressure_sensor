@@ -7,11 +7,20 @@ import '../platform/location_source.dart';
 import '../storage/store_api.dart';
 import 'ble.dart';
 import 'capture_api.dart';
+import 'device_hub.dart';
+import 'simulator_hub.dart';
+import '../simulator/engine.dart' show simulatorPort;
 
-Capture createCapture() => NativeCapture();
+Capture createCapture({
+  bool simulated = false,
+  int simulationPort = simulatorPort,
+}) => NativeCapture(simulated: simulated, simulationPort: simulationPort);
 
 class NativeCapture implements Capture {
-  BleHub? _hub;
+  final bool simulated;
+  final int simulationPort;
+  NativeCapture({this.simulated = false, this.simulationPort = simulatorPort});
+  DeviceHub? _hub;
   final _events = StreamController<Json>.broadcast();
   @override
   Stream<Json> get events => _events.stream;
@@ -51,10 +60,10 @@ class NativeCapture implements Capture {
     if (!_disposed) _events.add(state);
   }
 
-  Future<BleHub> _getHub() async {
+  Future<DeviceHub> _getHub() async {
     if (_hub != null) return _hub!;
-    await bluetoothPermission();
-    _hub = BleHub();
+    if (!simulated) await bluetoothPermission();
+    _hub = simulated ? SimulatorHub(port: simulationPort) : BleHub();
     _bleSub = _hub!.events.stream.listen(_onBle);
     _timer = Timer.periodic(const Duration(milliseconds: 250), (_) {
       _maintain();
@@ -72,7 +81,11 @@ class NativeCapture implements Capture {
       (await (await _getHub()).connect(peripheral)).info;
   @override
   Future<Json> command(String device, Json command) async {
-    final peer = (await _getHub()).peers[device];
+    final hub = await _getHub();
+    if (simulated && device == 'simulator') {
+      return (hub as SimulatorHub).control(command);
+    }
+    final peer = hub.peers[device];
     if (peer == null) {
       throw const UserError('Előbb csatlakoztasd a készüléket.');
     }
@@ -98,6 +111,17 @@ class NativeCapture implements Capture {
   void _onBle(Json e) {
     final channels = state['channels'] as Map<String, Json>;
     switch (e['type']) {
+      case 'simulator':
+        state['simulator'] = e['state'];
+        if (_gpsEnabled) {
+          state['gps'] = e['state']['gps'] == true
+              ? 'Szimulált GPS'
+              : 'Szimulált GPS kikapcsolva · a nyomásadatok rögzülnek';
+        }
+        break;
+      case 'gps':
+        if (simulated) _onFix(object(e['fix']));
+        break;
       case 'discovery':
         state['discovered'] = e['devices'];
         break;
@@ -105,6 +129,7 @@ class NativeCapture implements Capture {
         state['error'] = e['message'];
         break;
       case 'connected':
+        if (simulated) state['error'] = null;
         final id = e['device_id'] as String, clock = e['clock'] as DeviceClock;
         _clocks[id] = clock;
         _clockUncertain.remove(id);
@@ -235,33 +260,39 @@ class NativeCapture implements Capture {
       state['gps'] = 'GPS nélkül';
       return false;
     }
-    return _gps.start(
-      (fix) {
-        if (_session == null || _closing || _faulted) return;
-        fix['segment_id'] = _phoneSegment!['id'];
-        if ((milliseconds(fix['captured_at']) - _now()).abs() > 10000) {
-          state['gps'] = 'Régi GPS-adat · csak nyomásnapló';
-          return;
-        }
-        if (_fixes.isNotEmpty &&
-            milliseconds(fix['captured_at']) <=
-                milliseconds(_fixes.last['captured_at'])) {
-          return;
-        }
-        _fixes.add(fix);
-        _buffer.add(record('gps_fixes', fix));
-        final accuracy = fix['accuracy_m'] as num;
-        state['gps'] = accuracy <= 10
-            ? 'GPS ±${accuracy.round()} m'
-            : 'Pontatlan GPS ±${accuracy.round()} m';
-        state['position'] = fix;
-      },
-      (message) {
-        state['gps'] = message;
-        _emit();
-      },
-      request: request,
-    );
+    if (simulated) {
+      state['gps'] = state['simulator']?['gps'] == true
+          ? 'Szimulált GPS'
+          : 'Szimulált GPS kikapcsolva · a nyomásadatok rögzülnek';
+      return false;
+    }
+    return _gps.start(_onFix, (message) {
+      state['gps'] = message;
+      _emit();
+    }, request: request);
+  }
+
+  void _onFix(Json fix) {
+    if (!_gpsEnabled || _session == null || _closing || _faulted) return;
+    fix['segment_id'] = _phoneSegment!['id'];
+    if ((milliseconds(fix['captured_at']) - _now()).abs() > 10000) {
+      state['gps'] = 'Régi GPS-adat · csak nyomásnapló';
+      return;
+    }
+    if (_fixes.isNotEmpty &&
+        milliseconds(fix['captured_at']) <=
+            milliseconds(_fixes.last['captured_at'])) {
+      return;
+    }
+    _fixes.add(fix);
+    _buffer.add(record('gps_fixes', fix));
+    final accuracy = fix['accuracy_m'] as num;
+    state['gps'] = simulated
+        ? 'Szimulált GPS ±${accuracy.round()} m'
+        : accuracy <= 10
+        ? 'GPS ±${accuracy.round()} m'
+        : 'Pontatlan GPS ±${accuracy.round()} m';
+    state['position'] = fix;
   }
 
   @override
@@ -405,7 +436,10 @@ class NativeCapture implements Capture {
           _lastSync = DateTime.now();
           unawaited(_syncClocks());
         }
-        if (_gpsEnabled && !_gps.running && DateTime.now().isAfter(_gpsRetry)) {
+        if (!simulated &&
+            _gpsEnabled &&
+            !_gps.running &&
+            DateTime.now().isAfter(_gpsRetry)) {
           _gpsRetry = DateTime.now().add(const Duration(seconds: 15));
           unawaited(_location(request: false));
         }

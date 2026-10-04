@@ -39,3 +39,4 @@ dist/
 .env
 .env.*
 !.env.example
+*.simulator.json

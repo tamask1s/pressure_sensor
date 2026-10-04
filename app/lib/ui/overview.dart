@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../controller.dart';
 import '../core/model.dart';
 import 'common.dart';
+import 'simulator.dart';
 
 class OverviewPage extends StatefulWidget {
   final AppController app;
@@ -239,7 +240,8 @@ class _OverviewState extends State<OverviewPage> {
           ],
         ),
         const SizedBox(height: 24),
-        if (app.rigs.isEmpty)
+        if (app.simulated) SimulatorPanel(app),
+        if (app.rigs.isEmpty && !app.simulated)
           Empty(
             Icons.sensors,
             'Kezdj egy eszközpárral',
@@ -249,7 +251,7 @@ class _OverviewState extends State<OverviewPage> {
               child: const Text('Eszközök megnyitása'),
             ),
           )
-        else ...[
+        else if (app.rigs.isNotEmpty) ...[
           DropdownButtonFormField<String>(
             initialValue: app.rig?['id'] as String?,
             isExpanded: true,

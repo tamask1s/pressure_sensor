@@ -35,7 +35,7 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get --enforce-lockfile
-      - run: dart format --output=none --set-exit-if-changed lib test
+      - run: dart format --output=none --set-exit-if-changed lib bin test
       - run: flutter analyze --no-pub
       - run: flutter test --no-pub
       - run: flutter test --no-pub --dart-define=HAS_GPS=false
@@ -43,6 +43,10 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.soak
         run: flutter test --no-pub --dart-define=RUN_SOAK=true test/soak_test.dart
       - run: flutter build windows --release --no-pub
+      - name: Build device simulator
+        run: dart compile exe bin/simulator.dart -o build/windows/x64/runner/Release/pressure_simulator.exe
+      - name: Include simulator instructions
+        run: Copy-Item SIMULATOR.md build/windows/x64/runner/Release/SIMULATOR.md
       - name: Include Visual C++ runtime
         shell: pwsh
         run: |
