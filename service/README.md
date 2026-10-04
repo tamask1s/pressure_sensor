@@ -20,7 +20,7 @@ A felhasználó 2026-10-04-i kérése alapján a korábbi PostgreSQL/PostGIS-ter
 - Nginx: `/etc/nginx/timeonion-services/pressure_sensor.conf`. Az apex domain általános www-átirányítása alól csak ez az útvonal kivétel. A többi útvonal átirányítása és a többi snippet változatlan.
 - Korlátok: egy worker, legfeljebb 16 egyidejű kérés, 256 MB memória, 50% CPU; 512 KiB/kérés. 64 MiB szabad lemez alatt a feltöltés 503-at kap, az app tartós feltöltési sora megőrzi az adatot. A korlát nem helyettesít tárhelyfigyelést.
 
-Telepítés ezen a hoston: `sudo python3 service/ops/deploy.py`. Előtte tesztek, és `service/web/` valamint `service/.deps/` előkészítése szükséges. A script `nginx -t` után tölt újra, hiba esetén a konfigurációt visszaállítja; a meglévő másik két szolgáltatást nem indítja újra. A régi kiadás megmarad. Újratelepítés nem hoz létre új kulcsot/adatbázist.
+Telepítés ezen a hoston: `sudo python3 service/ops/deploy.py`. Előtte mentés, tesztek, és `service/web/` valamint `service/.deps/` előkészítése szükséges. A script kiadásváltás előtt a service felhasználójával ellenőrzi a web belépőfájljainak olvashatóságát; `nginx -t` után tölt újra, hiba esetén a konfigurációt visszaállítja. A meglévő másik két szolgáltatást nem indítja újra. A régi kiadás megmarad. Újratelepítés nem hoz létre új kulcsot/adatbázist.
 
 ## Windows eszközszimulátor
 
@@ -82,6 +82,8 @@ Adminnal belépve a weben az **Admin** menü mutatja a teljes gyártói listát:
 3. Az új eszköz tulajdonos nélkül kerül be. A vásárló ezután az app normál BLE/HMAC-párosítását használja; a Windows-szimulátornál a szimulált eszközök rendes claimje történik.
 
 A kiválasztott titkok csak az oldal memóriájában maradnak az importig vagy az oldal elhagyásáig; nem kerülnek böngészőtárolóba. A listázás, ellenőrzés, import és szerepkörmódosítás a saját DB `admin_audit` táblájába kerül: idő, végrehajtó, művelet, érintett azonosítók, eredmény, kérésazonosító; titkok nélkül.
+
+A pressure saját nginx CSP-jében a `connect-src blob:` a kiválasztott helyi JSON-fájl Flutteres olvasásához szükséges. Más szolgáltatás CSP-je nem változik. Az API-import továbbra is HTTPS-en, hitelesítéssel történik.
 
 API: `GET /api/v1/admin/devices?q=hps-...&limit=50&cursor=hps-...`; `POST /api/v1/admin/devices/import?dry_run=true` (alapértelmezett előnézet), majd ugyanaz a JSON `dry_run=false` mellett. Mindkettő aktuális DB-adminjogot igényel; weben a meglévő HttpOnly session és Origin/CSRF-védelem él. A tulajdonos e-mail-címe csak az adminlistában látható.
 

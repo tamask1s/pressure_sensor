@@ -18,6 +18,8 @@ os.chmod('/var/lib/pressure_sensor',0o700); os.chmod('/etc/pressure_sensor',0o75
 run('chown','root:pressure-sensor','/etc/pressure_sensor')
 release=Path('/opt/pressure_sensor/releases')/time.strftime('%Y%m%d-%H%M%S'); release.mkdir(parents=True)
 shutil.copytree(SOURCE/'service',release/'service',ignore=shutil.ignore_patterns('.deps','.runtime','__pycache__','.pytest_cache','tests'))
+for asset in ['index.html','main.dart.js']:
+    run('runuser','-u','pressure-sensor','--','test','-r',str(release/'service/web'/asset))
 if not Path('/opt/pressure_sensor/deps/pyproj').exists(): shutil.copytree(SOURCE/'service/.deps','/opt/pressure_sensor/deps',dirs_exist_ok=True)
 # Reuse the running application's SMTP settings, but copy the credential to a
 # pressure-only readable file. No cross-service credential-file permissions change.
