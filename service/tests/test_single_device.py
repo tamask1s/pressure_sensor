@@ -1,4 +1,4 @@
-from test_service import api, uploaded
+from .test_service import api, uploaded
 from pressure.common import uid, iso, now
 import copy
 
