@@ -123,7 +123,7 @@ Web build helyi fejlesztői gépen:
 
 ```sh
 cd app
-flutter build web --release --no-web-resources-cdn --pwa-strategy=none --base-href=/pressure_sensor/ --dart-define=API_URL=/pressure_sensor/api/v1
+flutter build web --release --no-web-resources-cdn --pwa-strategy=none --base-href=/pressure_sensor/ --dart-define=ENABLE_CLOUD=true --dart-define=API_URL=/pressure_sensor/api/v1
 ```
 
 [FastAPI proxy/root_path dokumentáció](https://fastapi.tiangolo.com/advanced/behind-a-proxy/), [SQLite WAL](https://www.sqlite.org/wal.html), [SQLite backup API](https://docs.python.org/3/library/sqlite3.html#sqlite3.Connection.backup).

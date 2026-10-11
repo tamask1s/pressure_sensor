@@ -56,7 +56,7 @@ jobs:
       - run: flutter test --no-pub test/admin_test.dart 2>&1 | tee /tmp/pressure-widget-tests.txt
       - name: History chart regression in a real browser
         run: flutter test --no-pub --platform chrome test/history_test.dart 2>&1 | tee /tmp/pressure-history-tests.txt
-      - run: flutter build web --release --no-pub --no-web-resources-cdn --pwa-strategy=none --base-href=/pressure_sensor/ --dart-define=API_URL=/pressure_sensor/api/v1
+      - run: flutter build web --release --no-pub --no-web-resources-cdn --pwa-strategy=none --base-href=/pressure_sensor/ --dart-define=ENABLE_CLOUD=true --dart-define=API_URL=/pressure_sensor/api/v1
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: web
@@ -72,6 +72,14 @@ jobs:
           retention-days: 1
 
   windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cloud: 'false'
+            suffix: ''
+          - cloud: 'true'
+            suffix: '-cloud'
     runs-on: windows-2022
     timeout-minutes: 30
     defaults:
@@ -89,12 +97,12 @@ jobs:
       - run: flutter pub get --enforce-lockfile
       - run: dart format --output=none --set-exit-if-changed lib bin test
       - run: flutter analyze --no-pub
-      - run: flutter test --no-pub
-      - run: flutter test --no-pub --dart-define=HAS_GPS=false
+      - run: flutter test --no-pub --dart-define=ENABLE_CLOUD=${{ matrix.cloud }}
+      - run: flutter test --no-pub --dart-define=ENABLE_CLOUD=${{ matrix.cloud }} --dart-define=HAS_GPS=false
       - name: Storage endurance test
         if: github.event_name == 'workflow_dispatch' && inputs.soak
-        run: flutter test --no-pub --dart-define=RUN_SOAK=true test/soak_test.dart
-      - run: flutter build windows --release --no-pub
+        run: flutter test --no-pub --dart-define=ENABLE_CLOUD=${{ matrix.cloud }} --dart-define=RUN_SOAK=true test/soak_test.dart
+      - run: flutter build windows --release --no-pub --dart-define=ENABLE_CLOUD=${{ matrix.cloud }} --dart-define=API_URL=https://timeonion.com/pressure_sensor/api/v1
       - name: Build device simulator
         run: dart compile exe bin/simulator.dart -o build/windows/x64/runner/Release/pressure_simulator.exe
       - name: Include simulator instructions
@@ -109,12 +117,20 @@ jobs:
           Copy-Item "$($crt.FullName)/*.dll" 'build/windows/x64/runner/Release/'
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: windows
+          name: windows${{ matrix.suffix }}
           path: app/build/windows/x64/runner/Release/
           if-no-files-found: error
           retention-days: 7
 
   android:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cloud: 'false'
+            suffix: ''
+          - cloud: 'true'
+            suffix: '-cloud'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     defaults:
@@ -137,14 +153,22 @@ jobs:
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-36' 'build-tools;35.0.0' 'ndk;27.0.12077973' 'cmake;3.22.1'
       - run: flutter pub get --enforce-lockfile
-      - run: flutter build apk --release --no-pub
+      - run: flutter build apk --release --no-pub --dart-define=ENABLE_CLOUD=${{ matrix.cloud }} --dart-define=API_URL=https://timeonion.com/pressure_sensor/api/v1
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: android-test-apk
+          name: android-test-apk${{ matrix.suffix }}
           path: app/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 7
   firmware:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - defaults: sdkconfig.defaults
+            suffix: ''
+          - defaults: sdkconfig.defaults;sdkconfig.debug
+            suffix: '-debug'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -157,10 +181,10 @@ jobs:
           cmake --build fw/build-native
           ./fw/build-native/core_test
       - name: ESP32 firmware
-        run: docker run --rm -v "$GITHUB_WORKSPACE:/project" -w /project/fw -e IDF_TARGET=esp32 espressif/idf:v6.0.2 idf.py build
+        run: docker run --rm -v "$GITHUB_WORKSPACE:/project" -w /project/fw -e IDF_TARGET=esp32 espressif/idf:v6.0.2 idf.py -D "SDKCONFIG_DEFAULTS=${{ matrix.defaults }}" build
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: esp32-firmware
+          name: esp32-firmware${{ matrix.suffix }}
           path: |
             fw/build/pressure_sensor_v2.bin
             fw/build/bootloader/bootloader.bin

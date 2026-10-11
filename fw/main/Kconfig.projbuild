@@ -1,0 +1,7 @@
+menu "Pressure sensor"
+config HPS_DEBUG_CONSOLE
+    bool "Serial hardware test console (bench firmware only)"
+    default n
+    help
+        Enables explicit serial debug commands. Normal firmware excludes these.
+endmenu

@@ -1,4 +1,6 @@
 #include "hardware.hpp"
+#include "debug.hpp"
+#include "esp_log.h"
 #include <algorithm>
 #include <cstdio>
 #include <ctime>
@@ -41,6 +43,7 @@ int64_t utc_ms(){auto offset=utc_offset.load();return offset?offset+int64_t(now_
 static uint8_t bcd(int n){return uint8_t((n/10)*16+n%10);}
 static int dec(uint8_t n){return (n>>4)*10+(n&15);}
 static bool transfer(i2c_master_dev_handle_t dev,const uint8_t* tx,size_t nt,uint8_t* rx,size_t nr){
+    if(!bus_lock || !dev)return false;
     if(xSemaphoreTake(bus_lock,pdMS_TO_TICKS(30))!=pdTRUE)return false;
     esp_err_t result=nr?i2c_master_transmit_receive(dev,tx,nt,rx,nr,25):i2c_master_transmit(dev,tx,nt,25);
     xSemaphoreGive(bus_lock);return result==ESP_OK;
@@ -61,6 +64,13 @@ static bool sensor_start(){
     return transfer(sensor,b+1,5,nullptr,0);
 }
 bool read_pressure(int16_t& raw){
+#if CONFIG_HPS_DEBUG_CONSOLE
+    if(debug_enabled && debug_raw!=INT32_MIN){
+        int value=debug_raw; sensor_status=UINT16_MAX;
+        if(value==INT32_MAX)return false;
+        raw=int16_t(value);return true;
+    }
+#endif
     if(!sensor_started){sensor_started=sensor_start();return false;}
     uint16_t value[2]{};
     if(!sensor_read(0x30,value,2)){sensor_status=UINT16_MAX;return false;}
@@ -83,6 +93,10 @@ bool set_clock(int64_t utc){
     utc_offset=utc-int64_t(now_ms());rtc_ok=written;return written;
 }
 void read_battery(uint16_t& mv,uint8_t& soc){
+#if CONFIG_HPS_DEBUG_CONSOLE
+    if(debug_enabled && debug_battery>=0){mv=uint16_t(debug_battery.load());soc=uint8_t((mv-2800)*100/1400);return;}
+#endif
+    if(!adc){mv=UINT16_MAX;soc=UINT8_MAX;return;}
     int64_t sum=0;int count=0;
     for(int i=0;i<20;++i){int raw=0,value=0;if(adc_oneshot_read(adc,ADC_CHANNEL_9,&raw)==ESP_OK &&
         adc_cal && adc_cali_raw_to_voltage(adc_cal,raw,&value)==ESP_OK){sum+=value;++count;}}
@@ -96,6 +110,13 @@ bool set_sd(bool enabled){
     sd_enabled=enabled;if(!enabled)sd_failed=false;
     return true;
 }
+#if CONFIG_HPS_DEBUG_CONSOLE
+bool provision_test(uint32_t pin){
+    if(config.provisioned || pin>999999)return false;
+    uint8_t secret[32];esp_fill_random(secret,sizeof(secret));
+    return nvs_set_blob(nvs,"secret",secret,sizeof(secret))==ESP_OK && nvs_set_u32(nvs,"pin",pin)==ESP_OK && nvs_commit(nvs)==ESP_OK;
+}
+#endif
 void initialize_hardware(){
     setenv("TZ","UTC0",1);tzset();
     uint8_t mac[6];ESP_ERROR_CHECK(esp_efuse_mac_get_default(mac));
@@ -115,10 +136,11 @@ void initialize_hardware(){
     io.pin_bit_mask=(1ULL<<bt_btn)|(1ULL<<sd_btn);io.mode=GPIO_MODE_INPUT;ESP_ERROR_CHECK(gpio_config(&io));
     bus_lock=xSemaphoreCreateMutex();
     i2c_master_bus_config_t bc{};bc.i2c_port=I2C_NUM_0;bc.sda_io_num=GPIO_NUM_21;bc.scl_io_num=GPIO_NUM_22;bc.clk_source=I2C_CLK_SRC_DEFAULT;bc.glitch_ignore_cnt=7;
-    ESP_ERROR_CHECK(i2c_new_master_bus(&bc,&bus));
+    if(i2c_new_master_bus(&bc,&bus)!=ESP_OK)ESP_LOGW("hardware","I2C unavailable; BLE remains enabled");
     i2c_device_config_t dc{};dc.dev_addr_length=I2C_ADDR_BIT_LEN_7;dc.device_address=0x6d;dc.scl_speed_hz=100000;
-    ESP_ERROR_CHECK(i2c_master_bus_add_device(bus,&dc,&sensor));dc.device_address=0x68;
-    ESP_ERROR_CHECK(i2c_master_bus_add_device(bus,&dc,&rtc));
+    if(bus && i2c_master_bus_add_device(bus,&dc,&sensor)!=ESP_OK)sensor=nullptr;
+    dc.device_address=0x68;
+    if(bus && i2c_master_bus_add_device(bus,&dc,&rtc)!=ESP_OK)rtc=nullptr;
     sensor_started=sensor_start();uint16_t serial[2]{};if(sensor_read(0x50,serial,2))config.sensor_serial=uint32_t(serial[0])|(uint32_t(serial[1])<<16);
     uint8_t reg=0x0f,status=0,clock[7]{};
     if(transfer(rtc,&reg,1,&status,1) && !(status&0x80)){
@@ -132,11 +154,13 @@ void initialize_hardware(){
                 epoch>=1577836800 && epoch<4102444800LL){utc_offset=int64_t(epoch)*1000-int64_t(now_ms());rtc_ok=true;}
         }
     }
-    adc_oneshot_unit_init_cfg_t ac{};ac.unit_id=ADC_UNIT_2;ESP_ERROR_CHECK(adc_oneshot_new_unit(&ac,&adc));
+    adc_oneshot_unit_init_cfg_t ac{};ac.unit_id=ADC_UNIT_2;
+    if(adc_oneshot_new_unit(&ac,&adc)!=ESP_OK)adc=nullptr;
     adc_oneshot_chan_cfg_t channel{};channel.atten=ADC_ATTEN_DB_0;channel.bitwidth=ADC_BITWIDTH_12;
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc,ADC_CHANNEL_9,&channel));
+    if(adc && adc_oneshot_config_channel(adc,ADC_CHANNEL_9,&channel)!=ESP_OK){adc_oneshot_del_unit(adc);adc=nullptr;}
     adc_cali_line_fitting_config_t cal{};cal.unit_id=ADC_UNIT_2;cal.atten=ADC_ATTEN_DB_0;cal.bitwidth=ADC_BITWIDTH_12;cal.default_vref=1100;
-    adc_cali_create_scheme_line_fitting(&cal,&adc_cal);
+    if(adc)adc_cali_create_scheme_line_fitting(&cal,&adc_cal);
+    ESP_LOGW("hardware","id=%s provisioned=%d sensor=%d RTC=%d ADC=%d; GPIO34/35 require external pull-ups",config.id,config.provisioned,sensor_started,rtc_ok.load(),adc!=nullptr);
     sd_queue=xQueueCreate(100,sizeof(Sample));configASSERT(sd_queue);
 }
 void sd_task(void*){
@@ -172,12 +196,25 @@ void sd_task(void*){
 void io_task(void*){
     HeldButton bt,sd;for(;;){
         auto now=now_ms();
-        if(bt.update(!gpio_get_level(bt_btn),now))pairing_until=now+120000;
-        if(sd.update(!gpio_get_level(sd_btn),now))set_sd(!sd_enabled);
+        bool buttons=true;
+#if CONFIG_HPS_DEBUG_CONSOLE
+        buttons=!debug_enabled || debug_buttons;
+        static int previous=-1;int levels=gpio_get_level(bt_btn)|(gpio_get_level(sd_btn)<<1);
+        if(debug_monitor && levels!=previous)printf("buttons GPIO34=%d GPIO35=%d uptime=%llu\n",levels&1,(levels>>1)&1,(unsigned long long)now);
+        previous=levels;
+#endif
+        if(bt.update(buttons && !gpio_get_level(bt_btn),now))pairing_until=now+120000;
+        if(sd.update(buttons && !gpio_get_level(sd_btn),now))set_sd(!sd_enabled);
         bool blink=(now/250)%2,identify=now<identify_until;
         gpio_set_level(bt_led,now<pairing_until && blink);gpio_set_level(sd_led,sd_failed?blink:bool(sd_enabled));
         gpio_set_level(red,identify?blink:(!config.provisioned||sd_failed||sensor_failed));
         gpio_set_level(green,identify?blink:(!radio_connected()));gpio_set_level(blue,identify?blink:radio_connected());
+#if CONFIG_HPS_DEBUG_CONSOLE
+        if(debug_enabled && debug_leds>=0){
+            int mask=debug_leds;const gpio_num_t pins[]={red,green,blue,sd_led,bt_led};
+            for(int i=0;i<5;++i)gpio_set_level(pins[i],(mask>>i)&1);
+        }
+#endif
         vTaskDelay(pdMS_TO_TICKS(25));
     }
 }

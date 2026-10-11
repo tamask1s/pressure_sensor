@@ -43,7 +43,7 @@ Webes login/regisztráció/reset előtt még nincs munkamenet: ezeknél szigorú
 | `PUT /rigs/{id}` | `{name,device_a_id,device_b_id,expected_revision}` → `{id,revision,...}` |
 | `PATCH /rigs/{id}` | `{archived:true,expected_revision}` → frissített pár |
 
-`Device`: `{id,name,ownership_id,firmware_version,protocol_version,sensor_serial,calibration,rig_id?,presence}`. A privát eszköztitok nem API-mező. Egy pár két különböző, saját készülék; egy készülék legfeljebb egy aktív párban. Élő mérés alatt pártagság nem módosítható. Régi session mindig saját pillanatképpel értelmezendő. Offline létrejött session a pillanatképet őrzi, nem írja vissza a pár időközben megváltozott tagságát.
+`Device`: `{id,name,ownership_id,firmware_version,protocol_version,sensor_serial,calibration,rig_id?,presence}`. A privát eszköztitok nem API-mező. Egy mérőegység egy vagy két különböző, saját készülék; a `device_b_id` elhagyható vagy null, a válaszban null; egy készülék legfeljebb egy aktív párban. Élő mérés alatt pártagság nem módosítható. Régi session mindig saját pillanatképpel értelmezendő. Offline létrejött session a pillanatképet őrzi, nem írja vissza a pár időközben megváltozott tagságát.
 
 A pár válasza `{id,name,device_a_id,device_b_id,revision,archived}`; létrehozáskor `expected_revision=0`. A PATCH/PUT eszköz- és párvégpontok közvetlenül az objektumot adják. Importformátum: a [készülék-előkészítés](../fw/PROVISIONING.md) JSON-sémája; ez titkos admin-bemenet, soha nem HTTP-válasz.
 
@@ -69,7 +69,7 @@ Az ID-k kanonikus kisbetűs alakban; `proof = base64url(HMAC-SHA256(device_secre
 | `GET /sessions/{id}/series` | `device_id?,from,to,bucket_ms` → időablakonként átlag/min/max/darabszám; legfeljebb 5000 pont |
 | `GET /sessions/{id}/export.csv` | Streamelt, saját nyers adat; mezők és egységek a fejlécben |
 
-`SessionStart`: `{collector_id,rig_id,rig_revision,name,started_at,gps_enabled,devices:[{device_id,ownership_id,role:A\|B,calibration}]}`. A `collector_id` telepítésenkénti UUID, nem jogosultság. A service a két eszköz aktív tulajdonát ellenőrzi; a session-pártagság a kliens által megőrzött pillanatkép, így késői offline feltöltés is értelmezhető. `calibration`: `{profile_id,sensor_serial,range_min_pa,range_max_pa,scale,offset_pa,verified}`; az eredeti nyomás utólag nem számolódik át csendben.
+`SessionStart`: `{collector_id,rig_id,rig_revision,name,started_at,gps_enabled,devices:[{device_id,ownership_id,role:A\|B,calibration}]}`. A `collector_id` telepítésenkénti UUID, nem jogosultság. A `devices` hossza 1 vagy 2: szerepek egy eszköznél `A`, kettőnél `A,B`, ismétlődő eszköz nélkül. A service az eszközök aktív tulajdonát ellenőrzi; a session-pártagság a kliens által megőrzött pillanatkép, így késői offline feltöltés is értelmezhető. `calibration`: `{profile_id,sensor_serial,range_min_pa,range_max_pa,scale,offset_pa,verified}`; az eredeti nyomás utólag nem számolódik át csendben.
 
 A kalibrált érték képlete: `round((range_min_pa + (raw_count + 16000) / 32000 * (range_max_pa - range_min_pa)) * scale + offset_pa)`. Alapérték `scale=1`, `offset_pa=0`; a fizikai tartományt a készülékhez kell igazolni. A kalibráció egy sessionön belül nem változik.
 
@@ -98,7 +98,7 @@ A kalibrált érték képlete: `round((range_min_pa + (raw_count + 16000) / 3200
 
 Érvényes `location`: `{latitude,longitude,accuracy_m,speed_mps?,fix_before_id,fix_after_id,method:interpolated}`. A két fix ugyanazon session app-időszegmensében van, időben közrefogja a mintát. A nyers fixek és horgonyok a mintával egy kötegben vagy előbb érkeznek. A service ellenőrzi az idő- és pontosságkorlátokat, tartományokat és hivatkozásokat; az interpolált koordinátát a fixekből ellenőrzi. Hiányos illesztésnél `location=null` és megfelelő flag.
 
-`flags` zárt értékkészlete: `sensor_error`, `pressure_out_of_range`, `rtc_invalid`, `battery_unknown`, `sd_error`, `gps_disabled`, `gps_missing`, `gps_inaccurate`, `time_uncertain`, `stationary`, `speed_unknown`. A hiányzó csatorna és BLE-rés session-szintű `gaps` rekord: `{device_id,boot_id?,from_seq?,to_seq?,started_at,ended_at,reason}`. A valódi nulla nyomás érvényes szám; szenzorhibánál `pressure_pa/raw_count=null`.
+`flags` zárt értékkészlete: `simulated`, `sensor_error`, `pressure_out_of_range`, `rtc_invalid`, `battery_unknown`, `sd_error`, `gps_disabled`, `gps_missing`, `gps_inaccurate`, `time_uncertain`, `stationary`, `speed_unknown`. A hiányzó csatorna és BLE-rés session-szintű `gaps` rekord: `{device_id,boot_id?,from_seq?,to_seq?,started_at,ended_at,reason}`. A valódi nulla nyomás érvényes szám; szenzorhibánál `pressure_pa/raw_count=null`.
 
 Egy batch legfeljebb 500 minta, 100 GPS-fix, 20 időszegmens és kibontva 512 KiB. Minden batch atomikus; hiba esetén nincs részleges siker. Azonos batch-ID azonos kanonikus tartalommal újrapróbálható; eltérő tartalom 409. Egyedi `(device_id,boot_id,seq)` másik sessionben is konfliktus, nem második mérés. A duplikációk egyezését minden tárolt mezőre ellenőrizzük. Az app a változatlan köteget tartósan őrzi, és csak siker után jelöli feltöltöttnek.
 

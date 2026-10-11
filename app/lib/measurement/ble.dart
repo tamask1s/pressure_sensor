@@ -9,6 +9,7 @@ class Peer extends DevicePeer {
   final Peripheral peripheral;
   final Map<String, GATTCharacteristic> characteristics;
   int requestId = 1;
+  DateTime? lastPacket;
   Peer(this.peripheral, Json info, this.characteristics) : super(info);
 }
 
@@ -25,6 +26,8 @@ class BleHub implements DeviceHub {
   Timer? timer;
   bool scanning = false, disposed = false;
   Future<void>? _scanWork;
+  final _connections = <String, Future<Peer>>{};
+  bool _watching = false;
   BleHub() {
     subscriptions.add(
       manager.discovered.listen((e) {
@@ -63,6 +66,7 @@ class BleHub implements DeviceHub {
           if (entry.value.peripheral.uuid == e.peripheral.uuid) {
             try {
               final packet = Packet.decode(e.value);
+              entry.value.lastPacket = DateTime.now();
               events.add({
                 'type': 'packet',
                 'device_id': entry.key,
@@ -85,7 +89,10 @@ class BleHub implements DeviceHub {
         }
       }),
     );
-    timer = Timer.periodic(const Duration(seconds: 1), (_) => _reconnect());
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      unawaited(_watchdog());
+      unawaited(_reconnect());
+    });
   }
   @override
   Future<void> scan() =>
@@ -107,6 +114,30 @@ class BleHub implements DeviceHub {
         await manager.stopDiscovery();
         scanning = false;
       }
+    }
+  }
+
+  Future<void> _watchdog() async {
+    if (_watching || disposed) return;
+    _watching = true;
+    try {
+      for (final entry in peers.entries.toList()) {
+        final peer = entry.value, last = peer.lastPacket;
+        if (last == null || DateTime.now().difference(last).inSeconds < 12) {
+          continue;
+        }
+        peer.lastPacket = null;
+        peers.remove(entry.key);
+        events.add({'type': 'disconnected', 'device_id': entry.key});
+        _backoff(entry.key);
+        try {
+          await manager
+              .disconnect(peer.peripheral)
+              .timeout(const Duration(seconds: 5));
+        } catch (_) {}
+      }
+    } finally {
+      _watching = false;
     }
   }
 
@@ -162,6 +193,17 @@ class BleHub implements DeviceHub {
 
   @override
   Future<Peer> connect(String peripheral, {String? expected}) async {
+    final peer = await (_connections[peripheral] ??= _connect(
+      peripheral,
+      expected: expected,
+    ).whenComplete(() => _connections.remove(peripheral)));
+    if (expected != null && peer.info['device_id'] != expected) {
+      throw const UserError('Eltérő eszközazonosító.');
+    }
+    return peer;
+  }
+
+  Future<Peer> _connect(String peripheral, {String? expected}) async {
     if (disposed) throw const UserError('A kapcsolatkezelő már leállt.');
     final found = discovered[peripheral];
     if (found == null) {
@@ -241,6 +283,7 @@ class BleHub implements DeviceHub {
         ),
       );
       if (disposed) throw const UserError('A kapcsolatkezelő már leállt.');
+      peer.lastPacket = DateTime.now();
       events.add({
         'type': 'connected',
         'device_id': info['device_id'],

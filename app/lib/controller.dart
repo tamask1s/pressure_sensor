@@ -11,15 +11,21 @@ import 'sync/uploader.dart';
 import 'platform/vault.dart';
 import 'simulator/engine.dart' show simulatorPort;
 
+const cloudEnabled = bool.fromEnvironment('ENABLE_CLOUD', defaultValue: false);
 const hasGps = bool.fromEnvironment('HAS_GPS', defaultValue: true);
 
 class AppController extends ChangeNotifier {
   final bool simulated;
+  final bool standalone;
+  final recorders = <String, Capture>{};
+  final _deviceOperations = <String>{};
+  final _recorderEvents = <String, StreamSubscription<Json>>{};
   final int simulationPort;
   final Api api;
   Capture capture;
   AppController({
     this.simulated = false,
+    this.standalone = !cloudEnabled,
     this.simulationPort = simulatorPort,
     Api? api,
   }) : api =
@@ -36,7 +42,7 @@ class AppController extends ChangeNotifier {
          simulationPort: simulationPort,
        );
   String get settingsKey =>
-      simulated ? 'sim:$simulationPort:settings' : 'settings';
+      '${standalone ? 'standalone:' : ''}${simulated ? 'sim:$simulationPort:' : ''}settings';
   Store? store;
   Uploader? uploader;
   Json? account, rig;
@@ -60,7 +66,11 @@ class AppController extends ChangeNotifier {
               _catalogAt! <
           30000;
   bool get local => account?['id'] == 'local';
-  bool get recording => capture.state['active'] == true;
+  bool get recording =>
+      capture.state['active'] == true ||
+      recorders.values.any((c) => c.state['active'] == true);
+  bool deviceRecording(String id) => recorders[id]?.state['active'] == true;
+  bool deviceBusy(String id) => _deviceOperations.contains(id);
   bool get signedIn => account != null;
   Map<String, Json> get channels =>
       Map<String, Json>.from(capture.state['channels'] as Map? ?? {});
@@ -73,9 +83,13 @@ class AppController extends ChangeNotifier {
       final config = await readVault(settingsKey);
       if (!kIsWeb && config?['api'] is String) api.base = config!['api'];
       collector = config?['collector'] as String? ?? collector;
-      await api.restore();
-      account = api.account;
-      if (account != null) await _open();
+      if (standalone) {
+        await openLocal();
+      } else {
+        await api.restore();
+        account = api.account;
+        if (account != null) await _open();
+      }
     } catch (e) {
       message = explain(e);
     }
@@ -120,7 +134,7 @@ class AppController extends ChangeNotifier {
     await writeVault(settingsKey, {'api': api.base, 'collector': collector});
     if (!kIsWeb) {
       final scope = local
-          ? 'local'
+          ? (standalone ? 'standalone' : 'local')
           : '${sha256.convert(utf8.encode(api.base)).toString().substring(0, 16)}-${account!['id']}';
       store = await openStore(simulated ? 'sim-$simulationPort-$scope' : scope);
       await capture.recover(store!);
@@ -141,7 +155,9 @@ class AppController extends ChangeNotifier {
     ready = true;
     changed();
     if (!local) unawaited(_refreshOnline());
-    if (rig != null && !kIsWeb) {
+    if (standalone && devices.isNotEmpty) {
+      await capture.select(devices);
+    } else if (rig != null && !kIsWeb) {
       try {
         await connectRig(rig!);
       } catch (e) {
@@ -216,7 +232,7 @@ class AppController extends ChangeNotifier {
       devices.where((d) => d['id'] == id).firstOrNull ??
       {'id': id, 'name': shortId(id)};
   Future<void> addDevice(String peripheral, String name) async {
-    if (recording) {
+    if (recording && !standalone) {
       throw const UserError('Eszköz hozzáadása előtt állítsd le a mérést.');
     }
     final info = await capture.inspect(peripheral);
@@ -264,6 +280,7 @@ class AppController extends ChangeNotifier {
     devices.removeWhere((d) => d['id'] == id);
     devices.add(d);
     await _cache();
+    if (standalone) await capture.select(devices);
     changed();
   }
 
@@ -284,8 +301,8 @@ class AppController extends ChangeNotifier {
     await capture.command('simulator', {'action': 'pairing'});
     await capture.scan();
     final found = objects(capture.state['discovered']);
-    if (found.length != 2) {
-      throw const UserError('Kapcsold be mindkét szimulált érzékelőt.');
+    if (found.isEmpty) {
+      throw const UserError('Kapcsolj be legalább egy szimulált érzékelőt.');
     }
     if (!local) await refreshCatalog();
     final selected = <String>[];
@@ -297,28 +314,41 @@ class AppController extends ChangeNotifier {
         await addDevice(p, 'Szimulált ${i == 0 ? 'A' : 'B'}');
       }
     }
+    if (standalone) {
+      await capture.select(devices);
+      changed();
+      return;
+    }
     final existing = rigs
         .where(
           (r) =>
               selected.contains(r['device_a_id']) &&
-              selected.contains(r['device_b_id']),
+              (r['device_b_id'] == null || selected.contains(r['device_b_id'])),
         )
         .firstOrNull;
     if (existing != null) {
       await connectRig(existing);
     } else {
-      await saveRig('Szimulált traktor', selected[0], selected[1]);
+      await saveRig(
+        'Szimulált traktor',
+        selected[0],
+        selected.length > 1 ? selected[1] : null,
+      );
     }
     changed();
   }
 
-  Future<void> saveRig(String name, String a, String b) async {
+  Future<void> saveRig(String name, String a, String? b) async {
+    if (b == '') b = null;
     if (recording) throw const UserError('Előbb állítsd le a mérést.');
-    if (a == b || name.trim().isEmpty) {
-      throw const UserError('Adj nevet és válassz két különböző készüléket.');
+    if (a.isEmpty || a == b || name.trim().isEmpty) {
+      throw const UserError('Adj nevet és válassz legalább egy készüléket.');
     }
     if (rigs.any(
-      (r) => [r['device_a_id'], r['device_b_id']].any((d) => d == a || d == b),
+      (r) => [
+        r['device_a_id'],
+        r['device_b_id'],
+      ].any((d) => d == a || (b != null && d == b)),
     )) {
       throw const UserError(
         'A készülék már egy pár tagja. Előbb archiváld azt a párt.',
@@ -364,7 +394,10 @@ class AppController extends ChangeNotifier {
     _lease = null;
     await store?.putMeta('selection', {'rig_id': r['id']});
     changed();
-    await capture.select([device(r['device_a_id']), device(r['device_b_id'])]);
+    await capture.select([
+      for (final id in [r['device_a_id'], r['device_b_id']].whereType<String>())
+        device(id),
+    ]);
   }
 
   Future<void> start(String name) async {
@@ -374,9 +407,9 @@ class AppController extends ChangeNotifier {
     }
     final snapshot = <Json>[];
     for (final role in ['A', 'B']) {
-      final id = r[role == 'A' ? 'device_a_id' : 'device_b_id'] as String,
-          d = device(id),
-          info = channels[id]?['info'];
+      final id = r[role == 'A' ? 'device_a_id' : 'device_b_id'] as String?;
+      if (id == null) continue;
+      final d = device(id), info = channels[id]?['info'];
       final cal = info == null
           ? object(d['calibration'])
           : calibration(object(info));
@@ -411,6 +444,68 @@ class AppController extends ChangeNotifier {
     });
     changed();
   }
+
+  Future<void> startDevice(String id, {String? name}) async {
+    if (!standalone || store == null || deviceBusy(id) || deviceRecording(id)) {
+      return;
+    }
+    _deviceOperations.add(id);
+    changed();
+    Capture? c;
+    try {
+      await recorders.remove(id)?.dispose();
+      await _recorderEvents.remove(id)?.cancel();
+      c = await capture.recorder(id);
+      recorders[id] = c;
+      _recorderEvents[id] = c.events.listen((_) => changed());
+      final d = device(id), info = channels[id]?['info'];
+      final now = DateTime.now().toUtc();
+      await c.start(store!, ids.v4(), {
+        'collector_id': collector,
+        'rig_id': ids.v4(),
+        'rig_revision': 1,
+        'name':
+            '${simulated ? 'SIM · ' : ''}${name ?? d['name']} · ${now.toLocal().toString().substring(0, 19)}',
+        'started_at': now.toIso8601String(),
+        'gps_enabled': false,
+        'devices': [
+          {
+            'device_id': id,
+            'ownership_id': 'local',
+            'role': 'A',
+            'calibration': info == null
+                ? object(d['calibration'])
+                : calibration(object(info)),
+          },
+        ],
+      });
+    } catch (_) {
+      await c?.dispose();
+      recorders.remove(id);
+      await _recorderEvents.remove(id)?.cancel();
+      rethrow;
+    } finally {
+      _deviceOperations.remove(id);
+      changed();
+    }
+  }
+
+  Future<void> stopDevice(String id) async {
+    if (deviceBusy(id)) return;
+    _deviceOperations.add(id);
+    changed();
+    try {
+      await recorders[id]?.stop();
+      await recorders.remove(id)?.dispose();
+      await _recorderEvents.remove(id)?.cancel();
+      await loadHistory(remote: false);
+    } finally {
+      _deviceOperations.remove(id);
+      changed();
+    }
+  }
+
+  Future<void> reconnectDevices() => capture.select(devices);
 
   Future<void> stop() async {
     await capture.stop();
@@ -469,7 +564,10 @@ class AppController extends ChangeNotifier {
         'observed_at': utc(now.millisecondsSinceEpoch + _serverOffset),
         'session_id': capture.state['session_id'],
         'devices': [
-          for (final id in [r['device_a_id'], r['device_b_id']])
+          for (final id in [
+            r['device_a_id'],
+            r['device_b_id'],
+          ].whereType<String>())
             () {
               final c = channels[id];
               return {
@@ -670,7 +768,15 @@ class AppController extends ChangeNotifier {
     _tick?.cancel();
     _ui?.cancel();
     unawaited(_captureEvents?.cancel());
-    unawaited(capture.dispose());
+    unawaited(() async {
+      for (final subscription in _recorderEvents.values) {
+        await subscription.cancel();
+      }
+      for (final recorder in recorders.values) {
+        await recorder.dispose();
+      }
+      await capture.dispose();
+    }());
     api.close();
     super.dispose();
   }

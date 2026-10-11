@@ -10,6 +10,7 @@ import 'ui/devices.dart';
 import 'ui/history.dart';
 import 'ui/map.dart';
 import 'ui/admin.dart';
+import 'ui/standalone.dart';
 
 void main(List<String> arguments) {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,6 +108,8 @@ class _AppState extends State<PressureApp> {
       listenable: app,
       builder: (context, _) => !app.ready
           ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          : app.standalone
+          ? StandaloneHome(app)
           : !app.signedIn
           ? AuthPage(app)
           : Home(app),

@@ -6,8 +6,8 @@ import 'common.dart';
 
 class HistoryPage extends StatefulWidget {
   final AppController app;
-  final void Function(Json) showMap;
-  const HistoryPage(this.app, {super.key, required this.showMap});
+  final void Function(Json)? showMap;
+  const HistoryPage(this.app, {super.key, this.showMap});
   @override
   State<HistoryPage> createState() => _HistoryState();
 }
@@ -78,7 +78,7 @@ class _HistoryState extends State<HistoryPage> {
           const Empty(
             Icons.history,
             'Még nincs rögzített mérés',
-            'Az elindított mérések itt maradnak, GPS és internet nélkül is.',
+            'Az elindított mérések és a CSV-export itt érhetők el.',
           ),
         for (final s in sessions)
           Padding(
@@ -112,7 +112,9 @@ class _HistoryState extends State<HistoryPage> {
                       app,
                       s,
                       device: device,
-                      showMap: () => widget.showMap(s),
+                      showMap: widget.showMap == null
+                          ? null
+                          : () => widget.showMap!(s),
                     ),
                   ),
                 ),
@@ -128,13 +130,13 @@ class SessionPage extends StatefulWidget {
   final AppController app;
   final Json session;
   final String? device;
-  final VoidCallback showMap;
+  final VoidCallback? showMap;
   const SessionPage(
     this.app,
     this.session, {
     super.key,
     this.device,
-    required this.showMap,
+    this.showMap,
   });
   @override
   State<SessionPage> createState() => _SessionState();
@@ -200,14 +202,15 @@ class _SessionState extends State<SessionPage> {
                 icon: const Icon(Icons.download),
                 label: Text(exporting ? 'Exportálás…' : 'CSV export'),
               ),
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  widget.showMap();
-                },
-                icon: const Icon(Icons.map_outlined),
-                label: const Text('Megnézem a térképen'),
-              ),
+              if (widget.showMap != null)
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    widget.showMap!();
+                  },
+                  icon: const Icon(Icons.map_outlined),
+                  label: const Text('Megnézem a térképen'),
+                ),
             ],
           ),
           const SizedBox(height: 24),

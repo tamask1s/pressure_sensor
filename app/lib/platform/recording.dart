@@ -23,9 +23,39 @@ Future<void> bluetoothPermission() async {
   }
 }
 
-Future<void> holdRecording(bool enabled, {bool location = false}) async {
-  if (Platform.isAndroid && enabled) await Permission.notification.request();
-  await nativeRecording.invokeMethod<void>(enabled ? 'start' : 'stop', {
-    'location': location,
+final _recorders = <Object, bool>{};
+final _defaultRecorder = Object();
+Future<void> _recordingChange = Future.value();
+
+Future<void> holdRecording(
+  bool enabled, {
+  bool location = false,
+  Object? owner,
+}) {
+  final key = owner ?? _defaultRecorder;
+  final result = _recordingChange.then((_) async {
+    final next = {..._recorders};
+    if (enabled) {
+      next[key] = location;
+    } else {
+      next.remove(key);
+    }
+    if (next.isNotEmpty &&
+        (_recorders.isEmpty ||
+            next.values.any((v) => v) != _recorders.values.any((v) => v))) {
+      if (Platform.isAndroid && _recorders.isEmpty) {
+        await Permission.notification.request();
+      }
+      await nativeRecording.invokeMethod<void>('start', {
+        'location': next.values.any((v) => v),
+      });
+    } else if (next.isEmpty && _recorders.isNotEmpty) {
+      await nativeRecording.invokeMethod<void>('stop');
+    }
+    _recorders
+      ..clear()
+      ..addAll(next);
   });
+  _recordingChange = result.catchError((Object _) {});
+  return result;
 }

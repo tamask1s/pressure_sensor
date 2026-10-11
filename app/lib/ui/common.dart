@@ -188,12 +188,11 @@ class PressureChart extends StatelessWidget {
         .where((p) => p['pa'] != null)
         .toList();
     if (valid.isEmpty) {
-      return const SizedBox(
-        height: 230,
-        child: Empty(
-          Icons.show_chart,
-          'Még nincs görbe',
-          'A csatlakoztatott eszközök nyomásadatai itt jelennek meg.',
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Hint(
+          'Még nincs görbe · a beérkező nyomásadatok itt jelennek meg.',
+          icon: Icons.show_chart,
         ),
       );
     }

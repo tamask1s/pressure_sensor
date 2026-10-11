@@ -89,7 +89,7 @@ class _OverviewState extends State<OverviewPage> {
                     if (v == 'sd') {
                       await app.capture.command(id, {
                         'op': 'sd',
-                        'enabled': ((c?['flags'] as int? ?? 0) & 4) == 0,
+                        'enabled': ((c?['flags'] as int? ?? 0) & 12) == 0,
                       });
                     }
                   }),
@@ -173,6 +173,8 @@ class _OverviewState extends State<OverviewPage> {
                 style: TextStyle(color: Colors.brown),
               ),
             ),
+          if (((c?['flags'] as int? ?? 0) & 64) != 0)
+            const Hint('Szimulált szenzoradat · hardverteszt', warning: true),
           if (d['calibration']?['verified'] == false)
             const Padding(
               padding: EdgeInsets.only(top: 8),
@@ -244,8 +246,8 @@ class _OverviewState extends State<OverviewPage> {
         if (app.rigs.isEmpty && !app.simulated)
           Empty(
             Icons.sensors,
-            'Kezdj egy eszközpárral',
-            'Add hozzá a két készüléket, majd hozz létre belőlük egy párt.',
+            'Csatlakoztass egy eszközt',
+            'Adj hozzá egy vagy két készüléket, majd hozz létre egy mérőegységet.',
             action: FilledButton(
               onPressed: widget.devices,
               child: const Text('Eszközök megnyitása'),
@@ -256,7 +258,7 @@ class _OverviewState extends State<OverviewPage> {
             initialValue: app.rig?['id'] as String?,
             isExpanded: true,
             decoration: const InputDecoration(
-              labelText: 'Aktív eszközpár',
+              labelText: 'Aktív mérőegység',
               prefixIcon: Icon(Icons.agriculture_outlined),
             ),
             items: app.rigs
@@ -281,7 +283,9 @@ class _OverviewState extends State<OverviewPage> {
           ),
           const SizedBox(height: 20),
           LayoutBuilder(
-            builder: (context, c) => c.maxWidth >= 620
+            builder: (context, c) => app.rig?['device_b_id'] == null
+                ? deviceCard('A')
+                : c.maxWidth >= 620
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

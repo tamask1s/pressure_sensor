@@ -51,9 +51,14 @@ void main() {
     );
     final server = SimulatorServer(Simulation(newSimulatorDevices()));
     await server.start(port: 0);
-    final app = AppController(simulated: true, simulationPort: server.port)
-      ..account = {'id': 'local', 'email': 'Helyi használat'}
-      ..store = store;
+    final app =
+        AppController(
+            standalone: false,
+            simulated: true,
+            simulationPort: server.port,
+          )
+          ..account = {'id': 'local', 'email': 'Helyi használat'}
+          ..store = store;
     addTearDown(() async {
       await app.logout();
       app.dispose();
@@ -70,6 +75,16 @@ void main() {
     expect(app.rigs, hasLength(1));
     expect(app.rig!['id'], rig);
     expect((await store.meta('selection'))!['rig_id'], rig);
+    await app.archiveRig(app.rig!);
+    await app.saveRig('Egy eszköz', app.devices.first['id'], null);
+    await app.start('Egycsatornás próba');
+    await until(() => app.capture.state['saved'] >= 5);
+    await app.stop();
+    final session = (await store.sessions()).single;
+    expect(objects(session['start']['devices']), hasLength(1));
+    expect(session['end']['expected_samples_by_device'].keys, [
+      app.devices.first['id'],
+    ]);
   });
   test(
     'Simulator packets preserve calibration, faults, boot and claim contract',

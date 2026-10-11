@@ -83,6 +83,12 @@ void main() {
     expect(p.seq, 0xffffffff);
     expect(p.uptimeLow, 0x12345678);
     expect(p.quality, contains('battery_unknown'));
+    bytes[1] = 65;
+    expect(Packet.decode(bytes).quality, contains('simulated'));
+    expect(Packet.decode(bytes).valid, true);
+    bytes[1] = 129;
+    expect(() => Packet.decode(bytes), throwsFormatException);
+    bytes[1] = 1;
     bytes[17] = 1;
     expect(() => Packet.decode(bytes), throwsFormatException);
     expect(() => Packet.decode(Uint8List(4)), throwsFormatException);

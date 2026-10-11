@@ -20,7 +20,7 @@ class Packet {
     if (bytes.length != 20 ||
         bytes[0] != 2 ||
         bytes[17] != 0 ||
-        bytes[1] & 0xc0 != 0) {
+        bytes[1] & 0x80 != 0) {
       throw const FormatException('Ismeretlen BLE-adatformátum');
     }
     final b = ByteData.sublistView(bytes);
@@ -41,6 +41,7 @@ class Packet {
   }
   bool get valid => flags & 1 != 0 && flags & 32 == 0;
   List<String> get quality => [
+    if (flags & 64 != 0) 'simulated',
     if (!valid) 'sensor_error',
     if (flags & 2 == 0) 'rtc_invalid',
     if (flags & 8 != 0) 'sd_error',

@@ -2584,8 +2584,16 @@
             "title": "Device A Id"
           },
           "device_b_id": {
-            "type": "string",
-            "pattern": "^hps-[0-9a-f]{12}$",
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^hps-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
             "title": "Device B Id"
           },
           "expected_revision": {
@@ -2599,7 +2607,6 @@
         "required": [
           "name",
           "device_a_id",
-          "device_b_id",
           "expected_revision"
         ],
         "title": "Rig"
@@ -2692,6 +2699,7 @@
             "items": {
               "type": "string",
               "enum": [
+                "simulated",
                 "sensor_error",
                 "pressure_out_of_range",
                 "rtc_invalid",
@@ -2706,7 +2714,7 @@
               ]
             },
             "type": "array",
-            "maxItems": 11,
+            "maxItems": 12,
             "title": "Flags"
           },
           "location": {
@@ -2840,7 +2848,7 @@
             },
             "type": "array",
             "maxItems": 2,
-            "minItems": 2,
+            "minItems": 1,
             "title": "Devices"
           }
         },

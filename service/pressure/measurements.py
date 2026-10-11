@@ -25,7 +25,7 @@ def start(id:ID,body:SessionStart,response:Response,a=Depends(authenticated),db=
         if old['account']!=a['account']: fail(404,'not_found')
         if old['start']!=dump(s): fail(409,'session_conflict')
         return session_value(old)
-    if len({d['device_id'] for d in s['devices']})!=2 or {d['role'] for d in s['devices']}!={'A','B'}: fail(422,'invalid_channels')
+    if len({d['device_id'] for d in s['devices']})!=len(s['devices']) or {d['role'] for d in s['devices']}!=({'A'} if len(s['devices'])==1 else {'A','B'}): fail(422,'invalid_channels')
     check_ownership(db,s,a['account'])
     rig=one(db,'SELECT * FROM rigs WHERE id=?',(s['rig_id'],))
     if rig and rig['account']!=a['account']: fail(404,'not_found')

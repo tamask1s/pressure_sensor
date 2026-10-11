@@ -21,6 +21,9 @@ class NativeCapture implements Capture {
   final int simulationPort;
   NativeCapture({this.simulated = false, this.simulationPort = simulatorPort});
   DeviceHub? _hub;
+  Future<DeviceHub>? _hubWork;
+  bool _ownsHub = true;
+  String? _deviceFilter;
   final _events = StreamController<Json>.broadcast();
   @override
   Stream<Json> get events => _events.stream;
@@ -60,15 +63,44 @@ class NativeCapture implements Capture {
     if (!_disposed) _events.add(state);
   }
 
-  Future<DeviceHub> _getHub() async {
-    if (_hub != null) return _hub!;
-    if (!simulated) await bluetoothPermission();
-    _hub = simulated ? SimulatorHub(port: simulationPort) : BleHub();
+  Future<DeviceHub> _getHub() =>
+      _hubWork ??= _initializeHub().whenComplete(() => _hubWork = null);
+
+  Future<DeviceHub> _initializeHub() async {
+    if (_disposed) throw const UserError('A kapcsolatkezelő már leállt.');
+    if (_bleSub != null) return _hub!;
+    if (_hub == null) {
+      if (!simulated) await bluetoothPermission();
+      if (_disposed) throw const UserError('A kapcsolatkezelő már leállt.');
+      _hub = simulated ? SimulatorHub(port: simulationPort) : BleHub();
+    }
     _bleSub = _hub!.events.stream.listen(_onBle);
     _timer = Timer.periodic(const Duration(milliseconds: 250), (_) {
       _maintain();
     });
     return _hub!;
+  }
+
+  @override
+  Future<Capture> recorder(String device) async {
+    final hub = await _getHub();
+    final child =
+        NativeCapture(simulated: simulated, simulationPort: simulationPort)
+          .._hub = hub
+          .._ownsHub = false
+          .._deviceFilter = device;
+    child._selected.add(device);
+    await child._getHub();
+    final peer = hub.peers[device];
+    if (peer?.clock != null) {
+      child._onBle({
+        'type': 'connected',
+        'device_id': device,
+        'info': peer!.info,
+        'clock': peer.clock!.newSegment(),
+      });
+    }
+    return child;
   }
 
   @override
@@ -100,7 +132,7 @@ class NativeCapture implements Capture {
     _selected
       ..clear()
       ..addAll(devices.map((d) => d['id'] as String));
-    await (await _getHub()).select(devices);
+    if (_ownsHub) await (await _getHub()).select(devices);
   }
 
   @override
@@ -109,6 +141,11 @@ class NativeCapture implements Capture {
   }
 
   void _onBle(Json e) {
+    if (_deviceFilter != null &&
+        e['device_id'] != null &&
+        e['device_id'] != _deviceFilter) {
+      return;
+    }
     final channels = state['channels'] as Map<String, Json>;
     switch (e['type']) {
       case 'simulator':
@@ -129,7 +166,7 @@ class NativeCapture implements Capture {
         state['error'] = e['message'];
         break;
       case 'connected':
-        if (simulated) state['error'] = null;
+        state['error'] = null;
         final id = e['device_id'] as String, clock = e['clock'] as DeviceClock;
         _clocks[id] = clock;
         _clockUncertain.remove(id);
@@ -148,7 +185,7 @@ class NativeCapture implements Capture {
         final id = e['device_id'] as String;
         if (channels[id] != null) channels[id]!['connected'] = false;
         if (_session != null) {
-          _gaps.add({
+          _addGap({
             'device_id': id,
             'boot_id': _clocks[id]?.boot,
             'started_at': utc(_now()),
@@ -164,6 +201,31 @@ class NativeCapture implements Capture {
     _emit();
   }
 
+  void _addGap(Json gap) {
+    // Keep completion within the API's 1000-gap limit, even during long RF faults.
+    if (_gaps.length < 998) {
+      _gaps.add(gap);
+      return;
+    }
+    final summary = _gaps
+        .where(
+          (g) =>
+              g['reason'] == 'additional_gaps' &&
+              g['device_id'] == gap['device_id'],
+        )
+        .firstOrNull;
+    if (summary != null) {
+      summary['ended_at'] = gap['ended_at'];
+    } else {
+      _gaps.add({
+        'device_id': gap['device_id'],
+        'started_at': gap['started_at'],
+        'ended_at': gap['ended_at'],
+        'reason': 'additional_gaps',
+      });
+    }
+  }
+
   int _now() => _phoneOffset + _monotonic.elapsedMilliseconds;
   void _onPacket(String device, Packet p) {
     final clock = _clocks[device];
@@ -173,7 +235,7 @@ class NativeCapture implements Capture {
     _seen[key] = p.seq;
     final up = clock.unwrap(p.uptimeLow), at = clock.utcAt(up);
     if (_session != null && previous != null && p.seq > previous + 1) {
-      _gaps.add({
+      _addGap({
         'device_id': device,
         'boot_id': clock.boot,
         'from_seq': previous + 1,
@@ -197,6 +259,10 @@ class NativeCapture implements Capture {
       'boot_id': clock.boot,
       'captured_at': utc(at),
     });
+    if (previous != null && p.seq > previous + 1) {
+      channel['missed'] =
+          (channel['missed'] as int? ?? 0) + p.seq - previous - 1;
+    }
     final chart = channel['chart'] as List<Json>;
     chart.add({'at': at, 'pa': p.valid ? p.pressure : null});
     if (chart.length > 600) chart.removeRange(0, chart.length - 600);
@@ -318,7 +384,7 @@ class NativeCapture implements Capture {
     state['error'] = null;
     for (final device in _selected) {
       if (_hub?.peers[device] == null) {
-        _gaps.add({
+        _addGap({
           'device_id': device,
           'started_at': session['started_at'],
           'ended_at': null,
@@ -338,7 +404,7 @@ class NativeCapture implements Capture {
     _newPhoneSegment();
     final located = await _location();
     try {
-      await holdRecording(true, location: located);
+      await holdRecording(true, location: located, owner: this);
     } catch (_) {
       await stop(interrupted: true);
       rethrow;
@@ -472,7 +538,7 @@ class NativeCapture implements Capture {
     final session = _session;
     try {
       for (final e in _hub!.peers.entries.toList()) {
-        if (e.value.busy) continue;
+        if (!_selected.contains(e.key) || e.value.busy) continue;
         try {
           await _hub!.synchronize(e.value);
           if (_session != session || _closing) break;
@@ -520,7 +586,7 @@ class NativeCapture implements Capture {
       state['session_id'] = null;
     } finally {
       _closing = false;
-      await holdRecording(false);
+      await holdRecording(false, owner: this);
       _emit();
     }
   }
@@ -580,7 +646,7 @@ class NativeCapture implements Capture {
     _timer?.cancel();
     await _bleSub?.cancel();
     await _gps.stop();
-    await _hub?.dispose();
+    if (_ownsHub) await _hub?.dispose();
     await _events.close();
   }
 }

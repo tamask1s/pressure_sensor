@@ -34,8 +34,10 @@ class _SimulatorPanelState extends State<SimulatorPanel> {
           children: [
             Text('Szimulátor', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            const Text(
-              'Két érzékelő, 10 Hz, 10 km/h. A nyomás és a GPS mesterséges. Fiókkal a tesztmérés a service-be is feltöltődik.',
+            Text(
+              app.standalone
+                  ? 'Két teszteszköz, mesterséges nyomásadatok, 10 Hz.'
+                  : 'Két érzékelő, 10 Hz, 10 km/h. A nyomás és a GPS mesterséges. Fiókkal a tesztmérés a service-be is feltöltődik.',
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -49,12 +51,14 @@ class _SimulatorPanelState extends State<SimulatorPanel> {
                       : () => run(app.prepareSimulation),
                   icon: const Icon(Icons.science_outlined),
                   label: Text(
-                    app.rig == null
+                    app.standalone
+                        ? 'Teszteszközök csatlakoztatása'
+                        : app.rig == null
                         ? 'Tesztpár előkészítése'
                         : 'Tesztpár csatlakoztatása',
                   ),
                 ),
-                if (state != null) ...[
+                if (state != null && !app.standalone) ...[
                   FilterChip(
                     label: const Text('GPS'),
                     selected: state['gps'] == true,

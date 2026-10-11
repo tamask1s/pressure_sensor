@@ -18,6 +18,8 @@ class WebCapture implements Capture {
     'BLE-méréshez az Android vagy Windows alkalmazást használd.',
   );
   @override
+  Future<Capture> recorder(String device) async => unavailable();
+  @override
   Future<void> scan() async => unavailable();
   @override
   Future<Json> inspect(String p) async => unavailable();

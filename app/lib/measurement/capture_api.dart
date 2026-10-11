@@ -4,6 +4,7 @@ import '../storage/store_api.dart';
 abstract class Capture {
   Stream<Json> get events;
   Json get state;
+  Future<Capture> recorder(String device);
   Future<void> scan();
   Future<Json> inspect(String peripheral);
   Future<Json> command(String device, Json command);

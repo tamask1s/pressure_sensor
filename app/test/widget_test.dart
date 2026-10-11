@@ -32,20 +32,20 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    final app = AppController()
+    final app = AppController(standalone: false)
       ..account = {'id': 'local', 'email': 'Helyi használat'};
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(body: OverviewPage(app, devices: () {})),
       ),
     );
-    expect(find.text('Kezdj egy eszközpárral'), findsOneWidget);
+    expect(find.text('Csatlakoztass egy eszközt'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
     app.dispose();
   });
   testWidgets('Login explains the scope of local measurements', (tester) async {
-    final app = AppController();
+    final app = AppController(standalone: false);
     await tester.pumpWidget(MaterialApp(home: AuthPage(app)));
     expect(find.text('Belépés'), findsOneWidget);
     expect(find.text('Mérés fiók nélkül, ezen az eszközön'), findsOneWidget);
@@ -56,7 +56,7 @@ void main() {
   testWidgets(
     'Simulator controls fit phone and desktop and label synthetic data',
     (tester) async {
-      final app = AppController(simulated: true)
+      final app = AppController(standalone: false, simulated: true)
         ..account = {'id': 'local', 'email': 'Helyi használat'};
       app.capture.state['simulator'] = {
         'gps': true,
@@ -119,7 +119,7 @@ void main() {
   testWidgets('Live pair fits a phone and desktop without overflow', (
     tester,
   ) async {
-    final app = AppController()
+    final app = AppController(standalone: false)
       ..account = {'id': 'local', 'email': 'Helyi használat'};
     app.devices = [
       for (final n in [1, 2])

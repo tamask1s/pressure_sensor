@@ -43,7 +43,7 @@ class Rename(Model):
     name: Name
 class Rig(Rename):
     device_a_id: DeviceID
-    device_b_id: DeviceID
+    device_b_id: DeviceID | None = None
     expected_revision: Annotated[int, Field(ge=0)]
 class Archive(Model):
     archived: Literal[True]
@@ -77,7 +77,7 @@ class SessionStart(Model):
     name: Name
     started_at: Time
     gps_enabled: bool
-    devices: Annotated[list[Snapshot], Field(min_length=2, max_length=2)]
+    devices: Annotated[list[Snapshot], Field(min_length=1, max_length=2)]
 class Segment(Model):
     id: ID
     device_id: DeviceID | None = None
@@ -108,7 +108,7 @@ class Location(Model):
     fix_before_id: ID
     fix_after_id: ID
     method: Literal['interpolated']
-Flag = Literal['sensor_error','pressure_out_of_range','rtc_invalid','battery_unknown','sd_error','gps_disabled','gps_missing','gps_inaccurate','time_uncertain','stationary','speed_unknown']
+Flag = Literal['simulated','sensor_error','pressure_out_of_range','rtc_invalid','battery_unknown','sd_error','gps_disabled','gps_missing','gps_inaccurate','time_uncertain','stationary','speed_unknown']
 class Sample(Model):
     device_id: DeviceID
     boot_id: ID
@@ -120,7 +120,7 @@ class Sample(Model):
     pressure_pa: Pressure | None
     battery_mv: Annotated[int, Field(ge=0, le=65535)] | None
     soc_pct: Annotated[int, Field(ge=0, le=100)] | None
-    flags: Annotated[list[Flag], Field(max_length=11)]
+    flags: Annotated[list[Flag], Field(max_length=12)]
     location: Location | None
     @model_validator(mode='after')
     def sensor(self):

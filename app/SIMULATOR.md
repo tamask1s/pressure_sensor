@@ -2,6 +2,10 @@
 
 A [GitHub Build and test](https://github.com/tamask1s/pressure_sensor/actions/workflows/build.yml) legfrissebb sikeres `main` futásánál, az **Artifacts → windows** csomagot töltsd le GitHub-belépés után. Bontsd ki az egész ZIP-et, majd indítsd a **`pressure_simulator.exe`** fájlt. Elindítja a Windows appot szimulációs módban; az app bezárásakor leáll. Ugyanaz a Flutter app és mérési/feltöltési kód fut, mint Androidon. Egy szimulátor már **két érzékelőt** ad; egy párhoz egy példány elég. Bluetooth vagy Python nem kell.
 
+Az alapértelmezett `windows` csomag önálló: **Teszteszközök csatlakoztatása → készülékenként Napló indítása → Mérések / CSV**. Az egyik napló leállítása nem állítja le a másikat. Próbálj ki SD ki/be kapcsolást és az egyik szimulált eszköz kikapcsolását. Ehhez sem service-import, sem fiók nem kell. A szimulált SD csak állapotjelzés; valódi kártyaírást az ESP32-vel lehet ellenőrizni.
+
+Az alábbi fiókos/service-próbához a **`windows-cloud`** csomagot használd.
+
 1. **Mérés fiók nélkül** → **Tesztpár előkészítése** → **Mérés indítása**.
 2. Az Élő mérés lapon kapcsolható a GPS, haladás, A/B elérhetőség, szenzorhiba; választható változó vagy rögzített nyomás, illetve eszköz-újraindítás.
 3. A Térkép és Mérések lap ugyanazt a rögzítést, hőtérképet és CSV-exportot használja, mint éles mérésnél. GPS nélkül is rögzít; csak a hely nélküli minták maradnak le a térképről.

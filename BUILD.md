@@ -5,10 +5,12 @@
 A GitHub **Actions → Build and test** sikeres futásából töltsd le az artifactokat. Windows: a teljes `windows` csomag kibontása után `pressure_field.exe`. Android: az `android-test-apk` csomag APK-ja, Android 8+. A `web` statikus fájljait a service-szel azonos HTTPS-originről szolgáld ki, API: `/api/v1`.
 
 1. Készülékenként egyszer [USB-előkészítés](fw/PROVISIONING.md).
-2. Helyi mód, vagy API HTTPS-cím megadása, regisztráció és e-mail-megerősítés.
-3. Eszközök → Hozzáadás; BT-gomb 1,5 s, majd a készülék hatjegyű PIN-je. Két eszközből pár létrehozása.
-4. Élő mérés → Mérés indítása. A GPS automatikus; nélküle is készül időbélyeges napló és feltöltés.
-5. Mérések: görbe és CSV. Térkép: közös fiókadatok, időszak/pár/csatorna szűrés.
+2. Az alapértelmezett kiadás közvetlenül az Eszközök képernyővel indul; nincs belépés vagy térkép.
+3. Eszköz csatlakoztatása; BT-gomb 1,5 s, majd a készülék hatjegyű PIN-je. Egyetlen eszköz is elég; nem kell párt létrehozni.
+4. A készülék kártyáján **Napló indítása/leállítása**, eszközönként függetlenül. Az **SD-kártya naplózása** kapcsoló külön működik, telefonos rögzítés nélkül is.
+5. Mérések: eszközszűrés, időbélyeges görbe és CSV-export.
+
+A `windows-cloud` / `android-test-apk-cloud` kiadás őrzi a fiókos működést: belépés, egy- vagy kéteszközös mérőegység, automatikus GPS, feltöltés és térkép. A web mindig felhős. Az önálló kiadás helyi adattára különálló, nincs automatikus áttöltés a felhőbe. A helyi napló jelenleg GPS nélküli; a felhős kiadás automatikus GPS-e változatlan.
 
 Helyi módban az adatok ezen az eszközön maradnak. Fiókos mérés offline is rögzül, majd ugyanabba a fiókba szinkronizál. Androidon a mérési értesítés visszanyitja az appot a leállításhoz. Windowsban futnia kell az appnak. Hosszú műszakhoz legalább 1 GB szabad hely ajánlott.
 
@@ -22,10 +24,12 @@ Az `app/` könyvtárban:
 flutter pub get --enforce-lockfile
 flutter build windows --release --no-pub
 flutter build apk --release --no-pub
-flutter build web --release --no-pub --no-web-resources-cdn --pwa-strategy=none
+flutter build web --release --no-pub --no-web-resources-cdn --pwa-strategy=none --dart-define=ENABLE_CLOUD=true --base-href=/pressure_sensor/
 ```
 
 A Windows-parancsot Windowson futtasd. A Flutter szükség esetén előállítja a Gradle wrappert és a pluginregisztrációt. A buildtermékek `app/build/` alatt keletkeznek. Az Android tesztkulcsos; saját kiadási aláíráshoz az ignorált `app/android/key.properties` mezői: `storeFile`, `storePassword`, `keyAlias`, `keyPassword`. GitHubon jelenleg teszt-APK készül, titok nélkül.
+
+Az önálló működés release buildben is alapértelmezett; nem debug-kapcsoló. Felhős Windows/Android build: a fenti parancshoz `--dart-define=ENABLE_CLOUD=true`. A két kiadás azonos alkalmazásazonosítót használ, Androidon egymást frissítik.
 
 Buildkapcsolók: `--dart-define=HAS_GPS=false`, `--dart-define=API_URL=https://host/api/v1`, `--dart-define=TILE_URL=...`. Saját térképszolgáltatóhoz az attribúciót is módosítsd az `app/lib/ui/map.dart` fájlban. A web alapból `/api/v1`; éles API HTTPS-only. A `ALLOW_LOCAL_HTTP=true` kizárólag fejlesztői, loopbackes próbához használható.
 
@@ -37,7 +41,7 @@ idf.py -C fw build
 idf.py -C fw -p COM7 flash
 ```
 
-A portot igazítsd a géphez. A firmware-frissítés nem írja felül az egyedi NVS-t. CI-ben az Espressif `espressif/idf:v6.0.2` konténere fordít; az artifact `flash_args` fájlja adja a címeket. A lábkiosztás a [rendszertervben](SYSTEM.md).
+A portot igazítsd a géphez. A firmware-frissítés nem írja felül az egyedi NVS-t. CI-ben az Espressif `espressif/idf:v6.0.2` konténere fordít; az artifact `flash_args` fájlja adja a címeket. A lábkiosztás a [rendszertervben](SYSTEM.md). A külön soros hardverteszt build és a devboard-próba: [fw/DEBUG.md](fw/DEBUG.md).
 
 ## Átvételi próba
 

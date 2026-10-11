@@ -40,7 +40,7 @@ static std::string json_text(cJSON* object){char* text=cJSON_PrintUnformatted(ob
 static std::string info(){
     auto j=cJSON_CreateObject();
     cJSON_AddStringToObject(j,"device_id",config.id);cJSON_AddStringToObject(j,"boot_id",config.boot);
-    cJSON_AddNumberToObject(j,"uptime_ms",double(now_ms()));cJSON_AddStringToObject(j,"firmware_version","2.0.0");
+    cJSON_AddNumberToObject(j,"uptime_ms",double(now_ms()));cJSON_AddStringToObject(j,"firmware_version","2.1.0");
     cJSON_AddNumberToObject(j,"protocol_version",2);cJSON_AddNumberToObject(j,"sensor_serial",config.sensor_serial);
     cJSON_AddBoolToObject(j,"provisioned",config.provisioned);cJSON_AddBoolToObject(j,"pairing_open",now_ms()<pairing_until);
     cJSON_AddNumberToObject(j,"range_min_pa",config.min_pa);cJSON_AddNumberToObject(j,"range_max_pa",config.max_pa);
@@ -144,7 +144,7 @@ static int event(ble_gap_event* e,void*){
         if(e->connect.status){advertise();break;}
         connection=e->connect.conn_handle;authenticated=false;++generation;
         if(config.provisioned)ble_gap_security_initiate(connection);
-        {ble_gap_upd_params params{};params.itvl_min=24;params.itvl_max=40;params.latency=0;params.supervision_timeout=200;ble_gap_update_params(connection,&params);}
+        {ble_gap_upd_params params{};params.itvl_min=24;params.itvl_max=40;params.latency=0;params.supervision_timeout=600;ble_gap_update_params(connection,&params);}
         break;
     case BLE_GAP_EVENT_DISCONNECT:
         connection=BLE_HS_CONN_HANDLE_NONE;authenticated=false;notify_samples=false;notify_result=false;

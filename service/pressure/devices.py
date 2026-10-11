@@ -58,8 +58,8 @@ def busy(db,account,ids):
         if set(obj(l['devices'])) & set(ids) and l['session']: fail(409,'rig_measuring')
 @router.put('/rigs/{id}')
 def put_rig(id:ID,body:Rig,a=Depends(authenticated),db=Depends(database, scope="function")):
-    ids=[body.device_a_id,body.device_b_id]
-    if len(set(ids))!=2: fail(422,'two_distinct_devices_required')
+    ids=[d for d in [body.device_a_id,body.device_b_id] if d is not None]
+    if len(set(ids))!=len(ids): fail(422,'distinct_devices_required')
     for d in ids: owned(db,'devices',d,a['account'])
     old=one(db,'SELECT * FROM rigs WHERE id=?',(id,))
     if old and old['account']!=a['account']: fail(404,'not_found')
@@ -69,7 +69,7 @@ def put_rig(id:ID,body:Rig,a=Depends(authenticated),db=Depends(database, scope="
     for d in ids:
         other=one(db,'SELECT rig FROM members WHERE device=? AND rig!=?',(d,id))
         if other: fail(409,'device_in_other_rig')
-    result={'id':id,'name':body.name,'device_a_id':ids[0],'device_b_id':ids[1],'revision':value['revision']+1,'archived':False}
+    result={'id':id,'name':body.name,'device_a_id':ids[0],'device_b_id':body.device_b_id,'revision':value['revision']+1,'archived':False}
     db.execute('INSERT INTO rigs VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data',(id,a['account'],dump(result)))
     db.execute('DELETE FROM members WHERE rig=?',(id,))
     db.executemany('INSERT INTO members VALUES(?,?,?)',[(d,id,a['account']) for d in ids])

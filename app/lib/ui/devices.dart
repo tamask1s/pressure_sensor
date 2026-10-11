@@ -14,7 +14,7 @@ class DevicesPage extends StatelessWidget {
       if (context.mounted) {
         await showDialog<void>(
           context: context,
-          builder: (_) => _AddDevice(app),
+          builder: (_) => AddDeviceDialog(app),
         );
       }
     });
@@ -28,21 +28,21 @@ class DevicesPage extends StatelessWidget {
           ),
         )
         .toList();
-    if (available.length < 2) {
+    if (available.isEmpty) {
       await guard(context, () async {
-        throw const UserError('Legalább két, még szabad készülék szükséges.');
+        throw const UserError('Legalább egy szabad készülék szükséges.');
       });
       return;
     }
     final name = TextEditingController();
-    String a = available[0]['id'], b = available[1]['id'];
+    String a = available[0]['id'], b = '';
     bool busy = false;
     if (!context.mounted) return;
     await showDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, set) => AlertDialog(
-          title: const Text('Új eszközpár'),
+          title: const Text('Új mérőegység'),
           content: SizedBox(
             width: 420,
             child: Column(
@@ -51,7 +51,7 @@ class DevicesPage extends StatelessWidget {
                 TextField(
                   controller: name,
                   decoration: const InputDecoration(
-                    labelText: 'Pár neve',
+                    labelText: 'Mérőegység neve',
                     hintText: 'Például: 1. traktor',
                   ),
                 ),
@@ -64,6 +64,11 @@ class DevicesPage extends StatelessWidget {
                       isExpanded: true,
                       decoration: InputDecoration(labelText: '$role csatorna'),
                       items: [
+                        if (role == 'B')
+                          const DropdownMenuItem(
+                            value: '',
+                            child: Text('Nincs második eszköz'),
+                          ),
                         for (final d in available)
                           DropdownMenuItem(
                             value: d['id'] as String,
@@ -94,7 +99,7 @@ class DevicesPage extends StatelessWidget {
                       });
                       if (context.mounted) set(() => busy = false);
                     },
-              child: Text(busy ? 'Mentés…' : 'Pár létrehozása'),
+              child: Text(busy ? 'Mentés…' : 'Létrehozás'),
             ),
           ],
         ),
@@ -169,7 +174,7 @@ class DevicesPage extends StatelessWidget {
               ),
               title: Text(r['name'] as String),
               subtitle: Text(
-                'A: ${app.device(r['device_a_id'])['name']}    B: ${app.device(r['device_b_id'])['name']}',
+                'A: ${app.device(r['device_a_id'])['name']}${r['device_b_id'] == null ? '' : '    B: ${app.device(r['device_b_id'])['name']}'}',
               ),
               trailing: PopupMenuButton<String>(
                 tooltip: 'Pár kezelése',
@@ -236,14 +241,14 @@ class DevicesPage extends StatelessWidget {
   );
 }
 
-class _AddDevice extends StatefulWidget {
+class AddDeviceDialog extends StatefulWidget {
   final AppController app;
-  const _AddDevice(this.app);
+  const AddDeviceDialog(this.app, {super.key});
   @override
-  State<_AddDevice> createState() => _AddState();
+  State<AddDeviceDialog> createState() => _AddState();
 }
 
-class _AddState extends State<_AddDevice> {
+class _AddState extends State<AddDeviceDialog> {
   bool busy = false;
   @override
   Widget build(BuildContext context) => ListenableBuilder(
