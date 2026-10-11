@@ -193,10 +193,10 @@ class BleHub implements DeviceHub {
 
   @override
   Future<Peer> connect(String peripheral, {String? expected}) async {
-    final peer = await (_connections[peripheral] ??= _connect(
-      peripheral,
-      expected: expected,
-    ).whenComplete(() => _connections.remove(peripheral)));
+    final peer = await (_connections[peripheral] ??=
+        _connect(peripheral, expected: expected).whenComplete(() {
+          _connections.remove(peripheral);
+        }));
     if (expected != null && peer.info['device_id'] != expected) {
       throw const UserError('Eltérő eszközazonosító.');
     }
