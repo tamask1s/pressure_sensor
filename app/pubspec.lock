@@ -117,6 +117,7 @@ packages:
     dependency: "direct main"
     description:
       name: crypto
+      sha256: "1e445881f28f22d6140f181e07737b22f1e099a5e1ff94b0af2f9e4a463f4855"
       url: "https://pub.dev"
     source: hosted
     version: "3.0.6"
@@ -682,6 +683,7 @@ packages:
     dependency: transitive
     description:
       name: process
+      sha256: "44b4226c0afd4bc3b7c7e67d44c4801abd97103cf0c84609e2654b664ca2798c"
       url: "https://pub.dev"
     source: hosted
     version: "5.0.4"
@@ -806,6 +808,7 @@ packages:
     dependency: transitive
     description:
       name: sync_http
+      sha256: "7f0cd72eca000d2e026bcd6f990b81d0ca06022ef4e32fb257b30d3d1014a961"
       url: "https://pub.dev"
     source: hosted
     version: "0.3.1"
@@ -949,6 +952,7 @@ packages:
     dependency: transitive
     description:
       name: webdriver
+      sha256: "2f3a14ca026957870cfd9c635b83507e0e51d8091568e90129fbf805aba7cade"
       url: "https://pub.dev"
     source: hosted
     version: "3.1.0"
