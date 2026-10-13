@@ -13,6 +13,25 @@ import 'simulator_test.dart' show until, records;
 void main() {
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
   test(
+    'Unavailable local storage reports why a device log cannot start',
+    () async {
+      final app = AppController(standalone: true);
+      addTearDown(app.dispose);
+      await expectLater(
+        app.startDevice('hps-000000000001'),
+        throwsA(
+          isA<UserError>().having(
+            (e) => e.message,
+            'message',
+            contains('adattár'),
+          ),
+        ),
+      );
+      expect(app.recording, false);
+      expect(app.deviceBusy('hps-000000000001'), false);
+    },
+  );
+  test(
     'Independent logs share a connection; stopping A keeps B recording',
     () async {
       HttpOverrides.global = null;

@@ -446,8 +446,13 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> startDevice(String id, {String? name}) async {
-    if (!standalone || store == null || deviceBusy(id) || deviceRecording(id)) {
+    if (!standalone || deviceBusy(id) || deviceRecording(id)) {
       return;
+    }
+    if (store == null) {
+      throw const UserError(
+        'A helyi adattár nem nyílt meg, ezért a napló nem indítható. Indítsd újra az alkalmazást; ha a hiba megmarad, ellenőrizd a szabad tárhelyet.',
+      );
     }
     _deviceOperations.add(id);
     changed();

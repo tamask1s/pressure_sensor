@@ -28,7 +28,8 @@ Future<Store> openStore(String account, {String? file}) async {
     options: OpenDatabaseOptions(
       version: 1,
       onConfigure: (db) async {
-        await db.execute('PRAGMA journal_mode=WAL');
+        // journal_mode returns a row; Android rejects it through execute().
+        await db.rawQuery('PRAGMA journal_mode=WAL');
         await db.execute('PRAGMA synchronous=FULL');
         await db.execute('PRAGMA foreign_keys=ON');
       },

@@ -14,7 +14,7 @@ class Peer extends DevicePeer {
 }
 
 class BleHub implements DeviceHub {
-  final CentralManager manager = CentralManager();
+  final CentralManager manager;
   @override
   final events = StreamController<Json>.broadcast();
   final discovered = <String, DiscoveredEventArgs>{};
@@ -28,9 +28,9 @@ class BleHub implements DeviceHub {
   Future<void>? _scanWork;
   final _connections = <String, Future<Peer>>{};
   bool _watching = false;
-  BleHub() {
+  BleHub({CentralManager? manager}) : manager = manager ?? CentralManager() {
     subscriptions.add(
-      manager.discovered.listen((e) {
+      this.manager.discovered.listen((e) {
         discovered[e.peripheral.uuid.toString()] = e;
         events.add({
           'type': 'discovery',
@@ -47,7 +47,7 @@ class BleHub implements DeviceHub {
       }),
     );
     subscriptions.add(
-      manager.connectionStateChanged.listen((e) {
+      this.manager.connectionStateChanged.listen((e) {
         if (e.state == ConnectionState.disconnected) {
           for (final p in peers.entries.toList()) {
             if (p.value.peripheral.uuid == e.peripheral.uuid) {
@@ -60,7 +60,7 @@ class BleHub implements DeviceHub {
       }),
     );
     subscriptions.add(
-      manager.characteristicNotified.listen((e) {
+      this.manager.characteristicNotified.listen((e) {
         if (e.characteristic.uuid.toString() != bleUuid(2)) return;
         for (final entry in peers.entries) {
           if (entry.value.peripheral.uuid == e.peripheral.uuid) {
@@ -81,11 +81,14 @@ class BleHub implements DeviceHub {
       }),
     );
     subscriptions.add(
-      manager.stateChanged.listen((e) {
+      this.manager.stateChanged.listen((e) {
         events.add({'type': 'adapter', 'state': e.state.name});
         if (e.state == BluetoothLowEnergyState.poweredOn) {
-          scanning = false;
           _reconnect();
+        } else {
+          scanning = false;
+          discovered.clear();
+          events.add({'type': 'discovery', 'devices': <Json>[]});
         }
       }),
     );
@@ -98,6 +101,13 @@ class BleHub implements DeviceHub {
   Future<void> scan() =>
       _scanWork ??= _scan().whenComplete(() => _scanWork = null);
   Future<void> _scan() async {
+    if (disposed) return;
+    if (manager.state == BluetoothLowEnergyState.unknown) {
+      // The native manager initializes asynchronously on the first scan.
+      await manager.stateChanged
+          .firstWhere((e) => e.state != BluetoothLowEnergyState.unknown)
+          .timeout(const Duration(seconds: 5));
+    }
     if (disposed) return;
     if (manager.state == BluetoothLowEnergyState.unauthorized) {
       await manager.authorize();
@@ -294,7 +304,7 @@ class BleHub implements DeviceHub {
     } catch (_) {
       peers.removeWhere((_, peer) => peer.peripheral.uuid == p.uuid);
       try {
-        await manager.disconnect(p);
+        await manager.disconnect(p).timeout(const Duration(seconds: 5));
       } catch (_) {}
       rethrow;
     }
