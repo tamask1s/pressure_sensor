@@ -179,7 +179,8 @@ jobs:
           path: app/build/android-recording-*.txt
           if-no-files-found: ignore
           retention-days: 1
-      - run: flutter build apk --release --no-pub --dart-define=ENABLE_CLOUD=${{ matrix.cloud }} --dart-define=API_URL=https://timeonion.com/pressure_sensor/api/v1
+      # Flutter 3.35 needs tooling regeneration to exclude the test-only plugin.
+      - run: flutter build apk --release --dart-define=ENABLE_CLOUD=${{ matrix.cloud }} --dart-define=API_URL=https://timeonion.com/pressure_sensor/api/v1
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: android-test-apk${{ matrix.suffix }}

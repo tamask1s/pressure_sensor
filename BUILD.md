@@ -23,7 +23,7 @@ Az `app/` könyvtárban:
 ```sh
 flutter pub get --enforce-lockfile
 flutter build windows --release --no-pub
-flutter build apk --release --no-pub
+flutter build apk --release
 flutter build web --release --no-pub --no-web-resources-cdn --pwa-strategy=none --dart-define=ENABLE_CLOUD=true --base-href=/pressure_sensor/
 ```
 
